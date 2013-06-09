@@ -5,18 +5,6 @@ Version: 1.0
 --]]
 if myHero.charName ~= "Ezreal" then return end
 
--- Prediction
-if VIP_USER then
-	require "Collision"
-	Coll = Collision(QRange, QSpeed, 0.25, 125)
-	QPredic = TargetPredictionVIP(QRange, QSpeed, 0.25)
-	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
-	RPredic = TargetPredictionVIP(RRange, RSpeed, 1.0)
-else
-	QPredic = TargetPrediction(1200, 2.0, 251)
-	WPredic = TargetPrediction(1050, 1.6, 250)
-	RPredic = TargetPrediction(2000, 1.7, 1000)
-end
 -- Constants
 local QRange = 1200
 local WRange = 1050
@@ -29,6 +17,19 @@ local RSpeed = 1700
 -- Variables
 local ignite = nil
 local IREADY = false
+
+-- Prediction
+if VIP_USER then
+	require "Collision"
+	Coll = Collision(QRange, QSpeed, 0.25, 125)
+	QPredic = TargetPredictionVIP(QRange, QSpeed, 0.25)
+	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
+	RPredic = TargetPredictionVIP(RRange, RSpeed, 1.0)
+else
+	QPredic = TargetPrediction(1200, 2.0, 251)
+	WPredic = TargetPrediction(1050, 1.6, 250)
+	RPredic = TargetPrediction(2000, 1.7, 1000)
+end
 
 function OnLoad()
 	PrintChat(">> AesEzreal Loaded!")
