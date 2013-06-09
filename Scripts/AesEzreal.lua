@@ -6,7 +6,7 @@ Version: 1.0
 if myHero.charName ~= "Ezreal" then return end
 
 -- Constants
-local QRange = 1200
+local QRange = 1100
 local WRange = 1050
 local RRange = 2000
 
@@ -26,9 +26,9 @@ if VIP_USER then
 	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
 	RPredic = TargetPredictionVIP(RRange, RSpeed, 1.0)
 else
-	QPredic = TargetPrediction(1200, 2.0, 251)
-	WPredic = TargetPrediction(1050, 1.6, 250)
-	RPredic = TargetPrediction(2000, 1.7, 1000)
+	QPredic = TargetPrediction(QRange, 2.0, 251)
+	WPredic = TargetPrediction(WRange, 1.6, 250)
+	RPredic = TargetPrediction(RRange, 1.7, 1000)
 end
 
 function OnLoad()
