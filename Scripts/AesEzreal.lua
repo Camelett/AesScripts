@@ -8,7 +8,7 @@ if myHero.charName ~= "Ezreal" then return end
 -- Prediction
 if VIP_USER then
 	require "Collision"
-	Coll = Collision(1100, 2000, 0.251, 125)
+	Coll = Collision(QRange, QSpeed, 0.25, 125)
 	QPredic = TargetPredictionVIP(QRange, QSpeed, 0.25)
 	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
 	RPredic = TargetPredictionVIP(RRange, RSpeed, 1.0)
