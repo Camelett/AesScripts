@@ -10,8 +10,8 @@ if VIP_USER then
 	require "Collision"
 	Coll = Collision(1100, 2000, 0.251, 125)
 	QPredic = TargetPredictionVIP(QRange, QSpeed, 0.251)
-	WPredic = TargetPredictionVIP(WRange, 1600, 0.25)
-	RPredic = TargetPredictionVIP(RRange, 1700, 0.265)
+	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
+	RPredic = TargetPredictionVIP(RRange, RSpeed, 0.265)
 else
 	QPredic = TargetPrediction(1100, 2.0, 251)
 	WPredic = TargetPrediction(1000, 1.6, 250)
@@ -23,6 +23,8 @@ local WRange = 1000
 local RRange = 2000
 
 local QSpeed = 2000
+local WSpeed = 1600
+local RSpeed = 1700
 
 -- Variables
 local ignite = nil
@@ -33,7 +35,7 @@ function OnLoad()
 	Config = scriptConfig("AesEzreal", "config")
 	Config:addParam("combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 	Config:addParam("harass", "Harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
-	Config:addParam("ultimate", "Ultimate", SCRIPT_PARAM_ONKEYDOWN, false, 82)
+	Config:addParam("ultimate", "Ultimate if killable", SCRIPT_PARAM_ONKEYDOWN, false, 82)
 	Config:addParam("ultimatecombo", "Use ultimate in combo", SCRIPT_PARAM_ONOFF, false)
 	Config:addParam("ignite", "Use ignite if killable", SCRIPT_PARAM_ONOFF, true)
 	Config:addParam("w", "Use W in combo", SCRIPT_PARAM_ONOFF, true)
@@ -67,7 +69,7 @@ function OnTick()
 	if Config.combo then
 		Combo()
 	end
-	
+
 	if Config.ultimate then
 		Ultimate()
 	end
@@ -75,7 +77,7 @@ function OnTick()
 	if Config.harass then
 		Harass()
 	end
-	
+
 	if Config.ignite then
 		Ignite()
 	end
@@ -129,9 +131,9 @@ end
 
 function Ultimate()
 	if ts.target ~= nil then
-		RDmg = (getDmg("R", ts.target, myHero) - 100)
-		if myHero:CanUseSpell(_R) == READY and rPred ~= nil and Config.ultimate and GetDistance(rPred) <= 2000 and ts.target.health < RDmg then
-			if VIP_USER  then
+		RDmg = getDmg("R", ts.target, myHero)
+		if myHero:CanUseSpell(_R) == READY and rPred ~= nil and Config.ultimate and GetDistance(rPred) <= 2000 and GetDistance(ts.target) > 200 and ts.target.health < RDmg then
+			if VIP_USER then
 				CastSpell(_R, rPred.x, rPred.z)
 			elseif not VIP_USER then
 				CastSpell(_R, rPred.x, rPred.z)
@@ -160,17 +162,18 @@ function OnDraw()
 	if ts.target ~= nil then
 		RDmg = getDmg("R", ts.target, myHero)
 	end
+	if ts.target ~= nil and myHero:CanUseSpell(_R) and ts.target.team ~= myHero.team and not ts.target.dead and ts.target.visible and
+	GetDistance(ts.target) <= RRange and GetDistance(ts.target) > 200 and ts.target.health < RDmg then
+		DrawCircle(ts.target.x, ts.target.y, ts.target.z,100, 0xFF0000)
+		DrawCircle(ts.target.x, ts.target.y, ts.target.z,150, 0xFF0000)
+		DrawCircle(ts.target.x, ts.target.y, ts.target.z,200, 0xFF0000)
+		DrawCircle(ts.target.x, ts.target.y, ts.target.z,300, 0xFF0000)
+		DrawText("Press R to Snipe!!",50,520,100,0xFFFF0000)
+		PrintFloatText(ts.target,0,"Ulti!!!")
+	end
 	if Config.draw then
 		if myHero:CanUseSpell(_Q) then
 			DrawCircle(myHero.x, myHero.y, myHero.z, 1100, 0xFF0000)
-		end
-		if ts.target ~= nil and myHero:CanUseSpell(_R) and ts.target.team ~= myHero.team and not ts.target.dead and ts.target.visible and GetDistance(ts.target) <= RRange and GetDistance(ts.target) > 500 and ts.target.health < RDmg then
-			DrawCircle(ts.target.x, ts.target.y, ts.target.z,100, 0xFF0000)
-			DrawCircle(ts.target.x, ts.target.y, ts.target.z,150, 0xFF0000)
-			DrawCircle(ts.target.x, ts.target.y, ts.target.z,200, 0xFF0000)
-			DrawCircle(ts.target.x, ts.target.y, ts.target.z,300, 0xFF0000)
-			DrawText("Press R to Snipe!!",50,520,100,0xFFFF0000)
-			PrintFloatText(ts.target,0,"Ulti!!!")
 		end
 	end
 end
