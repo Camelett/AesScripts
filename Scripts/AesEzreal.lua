@@ -133,7 +133,7 @@ end
 function Ultimate()
 	if ts.target ~= nil then
 		RDmg = getDmg("R", ts.target, myHero)
-		if myHero:CanUseSpell(_R) == READY and rPred ~= nil and Config.ultimate and GetDistance(rPred) <= 2000 and GetDistance(ts.target) > 200 and ts.target.health < RDmg then
+		if myHero:CanUseSpell(_R) == READY and rPred ~= nil and Config.ultimate and GetDistance(rPred) <= RRange and GetDistance(ts.target) > 200 and ts.target.health < RDmg then
 			if VIP_USER then
 				CastSpell(_R, rPred.x, rPred.z)
 			elseif not VIP_USER then
