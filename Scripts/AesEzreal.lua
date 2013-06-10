@@ -21,7 +21,7 @@ local IREADY = false
 -- Prediction
 if VIP_USER then
 	require "Collision"
-	Coll = Collision(QRange, QSpeed, 0.25, 125)
+	Coll = Collision(QRange, QSpeed, 0.25, 80)
 	QPredic = TargetPredictionVIP(QRange, QSpeed, 0.25)
 	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
 	RPredic = TargetPredictionVIP(RRange, RSpeed, 1.0)
