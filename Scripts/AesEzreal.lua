@@ -26,9 +26,9 @@ if VIP_USER then
 	WPredic = TargetPredictionVIP(WRange, WSpeed, 0.25)
 	RPredic = TargetPredictionVIP(RRange, RSpeed, 1.0)
 else
-	QPredic = TargetPrediction(QRange, 2.0, 251)
-	WPredic = TargetPrediction(WRange, 1.6, 250)
-	RPredic = TargetPrediction(RRange, 1.7, 1000)
+	QPredic = TargetPrediction(QRange, QSpeed / 1000, 251)
+	WPredic = TargetPrediction(WRange, WSpeed / 1000, 250)
+	RPredic = TargetPrediction(RRange, RSpeed / 1000, 1000)
 end
 
 function OnLoad()
@@ -100,7 +100,7 @@ function Combo()
 			if myHero:CanUseSpell(_Q) == READY and GetDistance(qPred) <= QRange then
 				if VIP_USER and QPredic:GetHitChance(ts.target) > 0.6 and not Coll:GetMinionCollision(myHero, qPred) then
 					CastSpell(_Q, qPred.x, qPred.z)
-				elseif not VIP_USER and not GetMinionCollision(myHero, ts.target, 125, enemyMinions.objects) then
+				elseif not VIP_USER and not GetMinionCollision(myHero, ts.target, 80, enemyMinions.objects) then
 					CastSpell(_Q, qPred.x, qPred.z)
 				end
 			end
@@ -123,7 +123,7 @@ function Harass()
 		if myHero:CanUseSpell(_Q) == READY and GetDistance(qPred) <= QRange then
 			if VIP_USER and QPredic:GetHitChance(ts.target) > 0.6 and not Coll:GetMinionCollision(myHero, qPred) then
 				CastSpell(_Q, qPred.x, qPred.z)
-			elseif not VIP_USER and not GetMinionCollision(myHero, ts.target, 125, enemyMinions.objects) then
+			elseif not VIP_USER and not GetMinionCollision(myHero, ts.target, 80, enemyMinions.objects) then
 				CastSpell(_Q, qPred.x, qPred.z)
 			end
 		end
