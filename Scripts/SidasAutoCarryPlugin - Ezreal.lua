@@ -16,8 +16,8 @@ if IsReborn then
 	SkillR = AutoCarry.Skills:NewSkill(false, _R, RRange, "Trueshot Barrage", AutoCarry.SPELL_LINEAR, 0, false, false, RSpeed, RDelay, RWidth, false)
 else
 	SkillQ = {spellKey = _Q, range = QRange, speed = QSpeed, delay = QDelay, width = QWidth, minions = true }
-    SkillW = {spellKey = _W, range = WRange, speed = WSpeed, delay = WDelay, width = WWidth, minions = false }
-    SkillR = {spellKey = _R, range = RRange, speed = RSpeed, delay = RDelay, width = RWidth, minions = false }
+	SkillW = {spellKey = _W, range = WRange, speed = WSpeed, delay = WDelay, width = WWidth, minions = false }
+	SkillR = {spellKey = _R, range = RRange, speed = RSpeed, delay = RDelay, width = RWidth, minions = false }
 end
 
 -- Plugin functions --
@@ -58,16 +58,16 @@ end
 -- Spells funtions --
 function Combo()
 	if AutoCarry.MainMenu.AutoCarry then
-		CastQ()
-		CastW()
-		CastR()
+	CastQ()
+	CastW()
+	CastR()
 	end
 end
 
 function Harass()
 	if AutoCarry..MixedMode then
-		CastQ()
-		CastW()
+	CastQ()
+	CastW()
 	end
 end
 
