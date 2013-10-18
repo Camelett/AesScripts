@@ -65,7 +65,7 @@ function Combo()
 end
 
 function Harass()
-	if AutoCarry..MixedMode then
+	if AutoCarry.MainMenu.MixedMode then
 	CastQ()
 	CastW()
 	end
