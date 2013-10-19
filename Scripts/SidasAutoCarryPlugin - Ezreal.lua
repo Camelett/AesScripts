@@ -22,7 +22,7 @@ end
 
 -- Plugin functions --
 function PluginOnLoad()
-	if AutoCarry.Skils then 
+	if AutoCarry.Skills then 
 		IsReborn = true 
 	else 
 		IsReborn = false 
