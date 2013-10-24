@@ -1,16 +1,15 @@
 -- Variables --
 local Target
 local Config = AutoCarry.PluginMenu
-local IsReborn = false
 
 -- Skills information --
-local QRange, WRange, RRange = 1100, 1050, 2000
+local QRange, WRange, RRange = 1150, 1050, 2000
 local QSpeed, WSpeed, RSpeed = 2.0, 1.6, 2.0
 local QDelay, WDelay, RDelay = 251, 250, 1000
-local QWidth, WWidth, RWidth = 70, 90, 150
+local QWidth, WWidth, RWidth = 80, 80, 160
 
 -- Skills Table --
-if IsReborn then
+if IsSACReborn then
 	SkillQ = AutoCarry.Skills:NewSkill(false, _Q, QRange, "Mystic Shot", AutoCarry.SPELL_LINEAR_COL, 0, false, false, QSpeed, QDelay, QWidth, true)
 	SkillW = AutoCarry.Skills:NewSkill(false, _W, WRange, "Essence Flux", AutoCarry.SPELL_LINEAR, 0, false, false, WSpeed, WDelay, WWidth, false)
 	SkillR = AutoCarry.Skills:NewSkill(false, _R, RRange, "Trueshot Barrage", AutoCarry.SPELL_LINEAR, 0, false, false, RSpeed, RDelay, RWidth, false)
@@ -22,15 +21,10 @@ end
 
 -- Plugin functions --
 function PluginOnLoad()
-	if AutoCarry.Skills then 
-		IsReborn = true 
-	else 
-		IsReborn = false 
-	end
-
-	if IsReborn then
+	if AutoCarry.Skills and VIP_USER then IsSACReborn = true else IsSACReborn = false end
+	
+	if IsSACReborn then
 		AutoCarry.Crosshair:SetSkillCrosshairRange(RRange)
-		AutoCarry.Skills:DisableAll()
 	else
 		AutoCarry.SkillsCrosshair.range = RRange
 	end
@@ -39,7 +33,7 @@ function PluginOnLoad()
 end
 
 function PluginOnTick()
-	Target = GetTarget()
+	Target = AutoCarry.GetAttackTarget()
 
 	Combo()
 	Harass()
@@ -74,7 +68,7 @@ end
 function CastQ()
 	if Target ~= nil and GetDistance(Target) < QRange then
 		if Config.ComboOptions.ComboQ or Config.HarassOptions.HarassQ then
-			if IsReborn then	
+			if IsSACReborn then	
 				SkillQ:Cast(Target)
 			else
 				AutoCarry.CastSkillshot(SkillQ, Target)
@@ -86,7 +80,7 @@ end
 function CastW()
 	if Target ~= nil and GetDistance(Target) < WRange then
 		if Config.ComboOptions.ComboW or Config.HarassOptions.HarassW then
-			if IsReborn then	
+			if IsSACReborn then	
 				SkillW:Cast(Target)
 			else
 				AutoCarry.CastSkillshot(SkillW, Target)
@@ -100,7 +94,7 @@ function CastR()
 		RDmg = getDmg("R", Target, myHero)
 		if GetDistance(Target) < RRange and RDmg > Target.health then
 			if Config.ComboOptions.ComboR or Config.FinisherOptions.FinisherR then
-				if IsReborn then	
+				if IsSACReborn then	
 					SkillR:Cast(Target)
 				else
 					AutoCarry.CastSkillshot(SkillR, Target)
@@ -113,14 +107,6 @@ end
 -- Other functions
 function Farm()
 
-end
-
-function GetTarget()
-    if IsReborn then
-        return AutoCarry.Crosshair:GetTarget()
-    else
-        return AutoCarry.GetAttackTarget()
-    end
 end
 
 -- Menu --
