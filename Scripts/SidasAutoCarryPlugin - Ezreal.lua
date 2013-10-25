@@ -52,16 +52,16 @@ end
 -- Spells funtions --
 function Combo()
 	if AutoCarry.MainMenu.AutoCarry then
-	CastQ()
-	CastW()
-	CastR()
+		CastQ()
+		CastW()
+		CastR()
 	end
 end
 
 function Harass()
-	if AutoCarry.MainMenu.MixedMode then
-	CastQ()
-	CastW()
+	if AutoCarry.MainMenu.MixedMode and CheckManaHarass() then
+		CastQ()
+		CastW()
 	end
 end
 
@@ -104,9 +104,10 @@ function CastR()
 	end
 end
 
--- Other functions
-function Farm()
-
+function CheckManaHarass()
+	if myHero.mana > myHero.maxMana * (Config.HarassOptions.HarassMana / 100) then
+		return true
+	end
 end
 
 -- Menu --
@@ -118,6 +119,7 @@ function Menu()
 	Config:addSubMenu("Harass Options", "HarassOptions")
 	Config.HarassOptions:addParam("HarassQ", "Use Mystic Shot", SCRIPT_PARAM_ONOFF, true)
 	Config.HarassOptions:addParam("HarassW", "Use Essence Flux", SCRIPT_PARAM_ONOFF, true)
+	Config.HarassOptions:addParam("HarassMana", "Lowest mana percent to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
 	Config:addSubMenu("Finisher Options","FinisherOptions")
 	Config.FinisherOptions:addParam("FinisherR", "Use Trueshot Barrage", SCRIPT_PARAM_ONOFF, true)
 	Config:addSubMenu("Drawing Options","DrawingOptions")
