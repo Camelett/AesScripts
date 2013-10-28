@@ -2,6 +2,9 @@
 local Target = nil
 local Config = AutoCarry.PluginMenu
 
+-- Requirements --
+require "aoe_skillshot_position"
+
 -- Skills information --
 local QRange, WRange, RRange = 1150, 1050, 2000
 local QSpeed, WSpeed, RSpeed = 2.0, 1.6, 2.0
@@ -80,8 +83,13 @@ end
 function CastR()
 	if Target ~= nil then
 		RDmg = getDmg("R", Target, myHero)
-		if GetDistance(Target) < RRange and RDmg > Target.health then
-			if Config.ComboOptions.ComboR or Config.FinisherOptions.FinisherR then
+		aoePrediction = GetAoESpellPosition(RWidth, Target)
+		if GetDistance(Target) < RRange then
+			if Config.ComboOptions.ComboR then
+				CastSpell(_R, aoePrediction.x, aoePrediction.z)
+			end	
+			
+			if Config.FinisherOptions.FinisherR and RDmg > Target.health then
 				AutoCarry.CastSkillshot(SkillR, Target)
 			end
 		end
