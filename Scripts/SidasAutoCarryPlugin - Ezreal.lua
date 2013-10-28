@@ -1,5 +1,5 @@
 -- Variables --
-local Target
+local Target = nil
 local Config = AutoCarry.PluginMenu
 
 -- Skills information --
@@ -9,15 +9,10 @@ local QDelay, WDelay, RDelay = 251, 250, 1000
 local QWidth, WWidth, RWidth = 80, 80, 160
 
 -- Skills Table --
-if IsSACReborn then
-	SkillQ = AutoCarry.Skills:NewSkill(false, _Q, QRange, "Mystic Shot", AutoCarry.SPELL_LINEAR_COL, 0, false, false, QSpeed, QDelay, QWidth, true)
-	SkillW = AutoCarry.Skills:NewSkill(false, _W, WRange, "Essence Flux", AutoCarry.SPELL_LINEAR, 0, false, false, WSpeed, WDelay, WWidth, false)
-	SkillR = AutoCarry.Skills:NewSkill(false, _R, RRange, "Trueshot Barrage", AutoCarry.SPELL_LINEAR, 0, false, false, RSpeed, RDelay, RWidth, false)
-else
-	SkillQ = {spellKey = _Q, range = QRange, speed = QSpeed, delay = QDelay, width = QWidth, minions = true }
-	SkillW = {spellKey = _W, range = WRange, speed = WSpeed, delay = WDelay, width = WWidth, minions = false }
-	SkillR = {spellKey = _R, range = RRange, speed = RSpeed, delay = RDelay, width = RWidth, minions = false }
-end
+local SkillQ = {spellKey = _Q, range = QRange, speed = QSpeed, delay = QDelay, width = QWidth, minions = true }
+local SkillW = {spellKey = _W, range = WRange, speed = WSpeed, delay = WDelay, width = WWidth, minions = false }
+local SkillR = {spellKey = _R, range = RRange, speed = RSpeed, delay = RDelay, width = RWidth, minions = false }
+
 
 -- Plugin functions --
 function PluginOnLoad()
@@ -25,6 +20,7 @@ function PluginOnLoad()
 	
 	if IsSACReborn then
 		AutoCarry.Crosshair:SetSkillCrosshairRange(RRange)
+		AutoCarry.Skills:DisableAll()
 	else
 		AutoCarry.SkillsCrosshair.range = RRange
 	end
@@ -68,11 +64,7 @@ end
 function CastQ()
 	if Target ~= nil and GetDistance(Target) < QRange then
 		if Config.ComboOptions.ComboQ or Config.HarassOptions.HarassQ then
-			if IsSACReborn then	
-				SkillQ:Cast(Target)
-			else
-				AutoCarry.CastSkillshot(SkillQ, Target)
-			end
+			AutoCarry.CastSkillshot(SkillQ, Target)
 		end
 	end
 end
@@ -80,11 +72,7 @@ end
 function CastW()
 	if Target ~= nil and GetDistance(Target) < WRange then
 		if Config.ComboOptions.ComboW or Config.HarassOptions.HarassW then
-			if IsSACReborn then	
-				SkillW:Cast(Target)
-			else
-				AutoCarry.CastSkillshot(SkillW, Target)
-			end
+			AutoCarry.CastSkillshot(SkillW, Target)
 		end
 	end
 end
@@ -94,11 +82,7 @@ function CastR()
 		RDmg = getDmg("R", Target, myHero)
 		if GetDistance(Target) < RRange and RDmg > Target.health then
 			if Config.ComboOptions.ComboR or Config.FinisherOptions.FinisherR then
-				if IsSACReborn then	
-					SkillR:Cast(Target)
-				else
-					AutoCarry.CastSkillshot(SkillR, Target)
-				end
+				AutoCarry.CastSkillshot(SkillR, Target)
 			end
 		end
 	end
@@ -126,6 +110,3 @@ function Menu()
 	Config.DrawingOptions:addParam("DrawQ", "Draw Mystic Shot", SCRIPT_PARAM_ONOFF, true)
 	Config.DrawingOptions:addParam("DrawR", "Draw Trueshot Barrage", SCRIPT_PARAM_ONOFF, true)
 end
-
---UPDATEURL=
---HASH=56062607C8057C3C5CCDFE56837F99F9
