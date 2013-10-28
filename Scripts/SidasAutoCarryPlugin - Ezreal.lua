@@ -16,7 +16,7 @@ local SkillR = {spellKey = _R, range = RRange, speed = RSpeed, delay = RDelay, w
 
 -- Plugin functions --
 function PluginOnLoad()
-	if AutoCarry.Skills and VIP_USER then IsSACReborn = true else IsSACReborn = false end
+	if AutoCarry.Skills then IsSACReborn = true else IsSACReborn = false end
 	
 	if IsSACReborn then
 		AutoCarry.Crosshair:SetSkillCrosshairRange(RRange)
