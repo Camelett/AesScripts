@@ -104,7 +104,7 @@ function Finisher()
 		if Menu.finisherOptions.finishQ then
 			qDamage = getDmg("Q", target, myHero)
 			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil then
-				CastSpell(_Q, predictionQ.x, predictionQ.z)
+				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
 		
