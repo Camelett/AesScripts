@@ -126,7 +126,7 @@ function Finisher()
 		end
 		
 		if Menu.finisherOptions.finishR then
-			rDamage = getDmg("R", target, myHero)
+			rDamage = getDmg("R", target, myHero) + 50
 			if rDamage > target.health and GetDistance(target) <= skillR.range and rPosition ~= nil then
 				CastSpell(_R, rPosition.x, rPosition.z)
 			end
