@@ -31,8 +31,6 @@ end
 -- Spell collision
 if VIP_USER then
 	qCollision = Collision(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
-else
-	qCollision = GetMinionCollision(myHero, target, skillQ.width, enemyMinions)
 end
 
 function OnLoad()
@@ -76,7 +74,7 @@ function combo()
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end
 			else
-				if not qCollision then
+				if not GetMinionCollision(myHero, target, skillQ.width) then
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end
 			end
@@ -94,13 +92,13 @@ end
 
 function harass()
 	if target ~= nil then
-		if menu.harassOptions.harassQ and GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
+		if menu.harassOptions.harassQ and GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and checkManaHarass() then
 			if VIP_USER then
-				if not qCollision:GetMinionCollision(myHero, qPosition) and checkManaHarass() then
+				if not qCollision:GetMinionCollision(myHero, qPosition) then
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end
 			else
-				if not qCollision and checkManaHarass() then
+				if not GetMinionCollision(myHero, target, skillQ.width) then
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end			
 			end
@@ -118,7 +116,8 @@ function farm()
 	if menu.scriptFarm and checkManaFarm() then
 		for i, minion in pairs(enemyMinions.objects) do
 			local adDamage = getDmg("AD", minion, myHero)
-			local qDamage = getDmg("Q", minion, myHero) + adDamage + myHero.ap		
+			local apDamage = (myHero.ap / 100) * 20
+			local qDamage = getDmg("Q", minion, myHero) + adDamage + apDamage	
 			if not minion.dead and GetDistance(minion) <= skillQ.range and qDamage >= minion.health and myHero:CanUseSpell(_Q) == READY then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, minion) then
@@ -136,11 +135,26 @@ end
 
 function finisher()
 	if target ~= nil then
+
+	local adDamage = getDmg("AD", target, myHero)
+	local qapDamage = (myHero.ap / 100) * 20
+	local wapDamage = (myHero.ap / 100) * 70
+	local rapDamage = (myHero.ap / 100) * 90
+	local qDamage = getDmg("Q", target, myHero) + adDamage + qapDamage
+	local wDamage = getDmg("W", target, myHero) + wapDamage
+	local rDamage = getDmg("R", target, myHero) + adDamage + rapDamage
+
 		if menu.finisherOptions.finishQ then
-			local adDamage = getDmg("AD", target, myHero)
-			local qDamage = getDmg("Q", target, myHero) + adDamage + myHero.ap
-			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil and not qCollision and myHero:CanUseSpell(_Q) == READY then
-				CastSpell(_Q, qPosition.x, qPosition.z)
+			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
+				if VIP_USER then
+					if not qCollision:GetMinionCollision(myHero, qPosition) then
+						CastSpell(_Q, qPosition.x, qPosition.z)
+					end
+				else
+					if not GetMinionCollision(myHero, target, skillQ.width) then
+						CastSpell(_Q, qPosition.x, qPosition.z)
+					end			
+				end
 			end
 		end
 		
@@ -152,8 +166,6 @@ function finisher()
 		end
 		
 		if menu.finisherOptions.finishR then
-			local adDamage = getDmg("AD", target, myHero)
-			local rDamage = getDmg("R", target, myHero) + adDamage + myHero.ap
 			if rDamage > target.health and GetDistance(target) <= skillR.range and rPosition ~= nil and myHero:CanUseSpell(_R) == READY then
 				CastSpell(_R, rPosition.x, rPosition.z)
 			end
