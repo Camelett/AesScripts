@@ -9,11 +9,11 @@ end
 
 -- Variables
 local target
-local version = 1.0
+local version = 1.1
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 640}
-local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 0, delay = 200}
+local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 2.0, delay = 500}
 local skillE = {spellName = "90 Caliber Net", range = 1000, speed = 2.0, delay = 0, width = 80}
 local skillR = {spellName = "Ace in the Hole", range = 2000}
 
@@ -30,16 +30,14 @@ end
 
 -- Collision
 if VIP_USER then
-	eCollision = Collision(skillE.range, skillE.speed, skillE.delay, skillE.width)
-else
-	eCollision = GetMinionCollision(myHero, target, skillE)
+ 	eCollision = Collision(skillE.range, skillE.speed, skillE.delay, skillE.width)
 end
 
 function OnLoad()
 	print("AesCaitlyn version: ".. version .. " loaded!")
 	skillR.range = getRRange()
 	menu()
-	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL)
+	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, false)
 end
 
 function OnTick()
@@ -70,21 +68,21 @@ end
 
 function combo()
 	if target ~= nil then
-		if menu.comboSubMenu.comboQ then
-			if GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
-				CastSpell(_Q, qPosition.x, qPosition.z)
-			end
+		if menu.comboSubMenu.comboQ and GetDistance(target) <= skillQ.range and qPosition ~= nil then
+			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
-
-		if menu.comboSubMenu.comboW then 
-			if GetDistance(target) <= skillW.range and wPosition ~= nil  and myHero:CanUseSpell(_W) == READY then
-				CastSpell(_W, wPosition.x, wPosition.z)
-			end
+		if menu.comboSubMenu.comboW and GetDistance(target) <= skillW.range and wPosition ~= nil then
+			CastSpell(_W, wPosition.x, wPosition.z)
 		end
-
-		if menu.comboSubMenu.comboE then 
-			if GetDistance(target) <= skillE.range and ePosition ~= nil and myHero:CanUseSpell(_E) == READY then
-				CastSpell(_E, ePosition.x, ePosition.z)
+		if menu.comboSubMenu.comboE and GetDistance(target) <= skillE.range and ePosition ~= nil then
+			if VIP_USER then
+				if not GetMinionCollision(myHero, target, skillE.width) then
+					CastSpell(_E, ePosition.x, ePosition.z)
+				end
+			else
+				if not GetMinionCollision(myHero, target, skillE.width) then 
+					CastSpell(_E, ePosition.x, ePosition.z)
+				end
 			end
 		end
 	end
@@ -92,15 +90,19 @@ end
 
 function harass()
 	if target ~= nil then
-		if menu.harassSubMenu.harassQ then
-			if GetDistance(target) <= skillQ.range and myHero:CanUseSpell(_Q) == READY and qPosition ~= nil and checkManaHarass() then
-				CastSpell(_Q, qPosition.x, qPosition.z)
-			end
+		if menu.harassSubMenu.harassQ and GetDistance(target) <= skillQ.range and qPosition ~= nil and checkManaHarass() then
+			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
 
-		if menu.harassSubMenu.harassE then
-			if GetDistance(target) <= skillE.range and myHero:CanUseSpell(_E) == READY and ePosition ~= nil and checkManaHarass() then
-				CastSpell(_E, ePosition.x, ePosition.z)
+		if menu.harassSubMenu.harassE and GetDistance(target) <= skillE.range and ePosition ~= nil and checkManaHarass() then
+			if VIP_USER then
+				if not eCollision:GetMinionCollision(myHero, qPosition) then
+					CastSpell(_E, ePosition.x, ePosition.z)
+				end
+			else
+				if not GetMinionCollision(myHero, target, skillE.width) then
+					CastSpell(_E, ePosition.x, ePosition.z)
+				end
 			end
 		end
 	end
@@ -108,28 +110,30 @@ end
 
 function finisher()
 	if target ~= nil then
-		if menu.finisherSubMenu.finishQ then
-			local adDamage = getDmg("AD", target, myHero)
-			local qDamage = getDmg("Q", target, myHero) + adDamage
-			if GetDistance(target) <= skillQ.range and qDamage >= target.health and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
-				CastSpell(_Q, qPosition.x, qPosition.z)
+
+		local adDamage = getDmg("AD", target, myHero)
+		local qDamage = getDmg("Q", target, myHero) + adDamage
+		local eDamage = getDmg("E", target, myHero) + myHero.ap
+		local rDamage = getDmg("R", target, myHero)
+
+		if menu.finisherSubMenu.finishQ and GetDistance(target) <= skillQ.range and qDamage >= target.health and qPosition ~= nil then
+			CastSpell(_Q, qPosition.x, qPosition.z)
+		end
+
+		if menu.finisherSubMenu.finishE and GetDistance(target) <= skillE.range and eDamage >= target.health and ePosition ~= nil then
+			if VIP_USER then
+				if not eCollision:GetMinionCollision(myHero, qPosition) then
+					CastSpell(_E, ePosition.x, ePosition.z)
+				end
+			else
+				if not GetMinionCollision(myHero, target, skillE.width) then
+					CastSpell(_E, ePosition.x, ePosition.z)
+				end
 			end
 		end
 
-		if menu.finisherSubMenu.finishE then
-			local eDamage = getDmg("E", target, myHero) + myHero.ap
-			if GetDistance(target) <= skillE.range and eDamage >= target.health and ePosition ~= nil and myHero:CanUseSpell(_E) == READY then
-				CastSpell(_E, ePosition.x, ePosition.z)
-			end
-		end
-
-		if menu.finisherSubMenu.finishR then
-			local adDamage = getDmg("AD", target, myHero)
-			local rDamage = getDmg("R", target, myHero)
-			if GetDistance(target) >= menu.finisherSubMenu.finishRRange and GetDistance(target) <= skillR.range and rDamage >= target.health and myHero:CanUseSpell(_R) == READY then
-				print("Should cast ult while our dmg: "..rDamage.. " and their health: ".. target.health)
-				CastSpell(_R, target)
-			end
+		if menu.finisherSubMenu.finishR and GetDistance(target) >= menu.finisherSubMenu.finishRRange and GetDistance(target) <= skillR.range and rDamage > target.health then
+			CastSpell(_R, target)
 		end
 	end
 end
