@@ -83,7 +83,7 @@ function combo()
 		end
 		
 		if menu.comboOptions.comboW and GetDistance(target) <= skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
-			CastSpell(_W, wPosition.x, wPosition.z
+			CastSpell(_W, wPosition.x, wPosition.z)
 		end
 		
 		if menu.comboOptions.comboR and GetDistance(target) <= skillR.range and rPosition ~= nil and myHero:CanUseSpell(_R) == READY then
