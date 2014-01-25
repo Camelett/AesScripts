@@ -29,7 +29,11 @@ else
 end
 
 -- Spell collision
-local qCollision = Collision(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
+if VIP_USER then
+	qCollision = Collision(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
+else
+	qCollision = GetMinionCollision(myHero, target, skillQ.width, enemyMinions)
+end
 
 function OnLoad()
 	PrintChat("AesEzreal loaded! Version: "..version)
@@ -72,7 +76,7 @@ function combo()
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end
 			else
-				if not GetMinionCollision(myHero, target, skillQ.width, enemyMinions) then
+				if not qCollision then
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end
 			end
@@ -96,7 +100,7 @@ function harass()
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end
 			else
-				if not GetMinionCollision(myHero, target, skillQ.width, enemyMinions) and checkManaHarass() then
+				if not qCollision and checkManaHarass() then
 					CastSpell(_Q, qPosition.x, qPosition.z)
 				end			
 			end
@@ -135,7 +139,7 @@ function finisher()
 		if menu.finisherOptions.finishQ then
 			local adDamage = getDmg("AD", target, myHero)
 			local qDamage = getDmg("Q", target, myHero) + adDamage + myHero.ap
-			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil then
+			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil and not qCollision then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
