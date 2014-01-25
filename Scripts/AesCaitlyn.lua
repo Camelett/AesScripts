@@ -1,159 +1,184 @@
---[[
-Script: AesCaityn
-Version: 0.6 Beta
-Author: Bestplox
-]]--
+if myHero.charName ~= "Caitlyn" then return end
 
--- RANGE
-local ERange = 1000
--- PREDICTION
-local QPredic = TargetPrediction(1300, 2.2, 610) -- Range , Speed, Delay
-local WPredic = TargetPrediction(800)
-local EPredic = TargetPrediction(1000, 0, 8)
--- Misc
-local ignite = nil
-local IREADY = false
+-- Require
+if VIP_USER then
+	require "Collision"
+	require "Prodiction"
+	prodiction = ProdictManager.GetInstance()
+end
+
+-- Variables
+local target
+local version = 1.0
+
+-- Skills information
+local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 640}
+local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 0, delay = 200}
+local skillE = {spellName = "90 Caliber Net", range = 1000, speed = 2.0, delay = 0, width = 80}
+local skillR = {spellName = "Ace in the Hole", range = 2000}
+
+-- Prediction
+if VIP_USER then
+        predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
+        predictionW = prodiction:AddProdictionObject(_W, skillE.range, skillE.speed * 1000, skillE.delay / 1000)
+        predictionE = prodiction:AddProdictionObject(_E, skillE.range, skillE.speed * 1000, skillE.delay / 1000)
+else
+        predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
+        predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
+        predictionE = TargetPrediction(skillE.range, skillE.speed, skillE.delay)
+end
+
+-- Collision
+if VIP_USER then
+	eCollision = Collision(skillE.range, skillE.speed, skillE.delay, skillE.width)
+else
+	eCollision = GetMinionCollision(myHero, target, skillE)
+end
 
 function OnLoad()
-	PrintChat(" >> Caitlyn combo loaded!")
-	Config = scriptConfig("Caitlyn Combo", "ConfigCombo")
-	Config:addParam("combo", "Use Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32) -- SpaceBar
-	Config:addParam("ult", "Show killable enemy with R", SCRIPT_PARAM_ONOFF, true)
-	Config:addParam("autoult", "Auto Ult", SCRIPT_PARAM_ONKEYDOWN, false, 82) -- R
-	Config:addParam("trap", "Trap under enemy", SCRIPT_PARAM_ONKEYDOWN, false, 87) -- x
-	Config:addParam("autoignite", "Use ignite", SCRIPT_PARAM_ONOFF, true)
-	Config:addParam("net", "Use net in combo", SCRIPT_PARAM_ONOFF, false)
-	Config:addParam("draw", "Draw Circles", SCRIPT_PARAM_ONOFF, true)
-	ts = TargetSelector(TARGET_LOW_HP, 1400, DAMAGE_PHYSICAL)
-	ts.name = "Caitlyn"
-	Config:addTS(ts)
-
-	enemyMinions = minionManager(MINION_ENEMY, 1200, player)
-
-	if myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") then
-		ignite = SUMMONER_1
-	elseif
-	myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") then
-		ignite = SUMMONER_2
-	end
+	print("AesCaitlyn version: ".. version .. " loaded!")
+	skillR.range = getRRange()
+	menu()
+	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL)
 end
 
 function OnTick()
-	ts:update()
-	enemyMinions:update()
+	targetSelector:update()
+	skillR.range = getRRange()
 
-	if Config.combo then
-		Combo()
+	if targetSelector.target ~= nil then
+		target = targetSelector.target
 	end
 
-	if Config.trap then
-		Trap()
+	if target ~= nil then
+		qPosition = predictionQ:GetPrediction(target)
+		wPosition = predictionW:GetPrediction(target)
+		ePosition = predictionE:GetPrediction(target)
 	end
 
-	if Config.autoignite then
-		Ignite()
-	end
-end
-
-function Combo()
-	if ts.target ~= nil then
-		-- Q
-		QPredict = QPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_Q) == READY and QPredict ~= nil and GetDistance(QPredict) <= 1300 then
-			CastSpell(_Q, QPredict.x, QPredict.z)
-		end
-
-		-- E
-		EPredict = EPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_E) == READY and EPredict ~= nil and Config.net and GetDistance(EPredict) <= 1000 then
-			if not minionCollision(EPredict, 60, ERange) then
-				CastSpell(_E, EPredict.x, EPredict.z)
-			end
-		end
-	end
-end
-
-function Trap()
-	if ts.target ~= nil then
-		WPredict = WPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_W) == READY and WPredict ~= nil then
-			CastSpell(_W, WPredict.x, WPredict.z)
-		end
-	end
-end
-
-function Ignite()
-	IREADY = (ignite ~= nil and myHero:CanUseSpell(ignite) == READY)
-	if IREADY then
-		local ignitedmg = 0
-		for j = 1, heroManager.iCount, 1 do
-			local enemyhero = heroManager:getHero(j)
-			if ValidTarget(enemyhero,600) then
-				ignitedmg = 50 + 20 * myHero.level
-				if enemyhero.health <= ignitedmg then
-					CastSpell(ignite, enemyhero)
-				end
-			end
-		end
-	end
+	if menu.combo then combo() end
+	if menu.harass then harass() end
+	if menu.finisherSubMenu.finishQ or menu.finisherSubMenu.finishE or menu.finisherSubMenu.finishR then finisher() end
 end
 
 function OnDraw()
-	if Config.draw then
-		if myHero:CanUseSpell(_Q) == READY then
-			DrawCircle(myHero.x, myHero.y, myHero.z, 1300, 0xFF0000)
-		end
-		if myHero:CanUseSpell(_E) == READY then
-			DrawCircle(myHero.x, myHero.y, myHero.z, 1000, 0xFF0000)
-		end
-		DrawCircle(myHero.x, myHero.y, myHero.z, 850, 0xFF0000)
-	end
+	if menu.drawSubMenu.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFFFFFF) end
+	if menu.drawSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFFFFFF) end
+	if menu.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillE.range, 0xFFFFFF) end
+	if menu.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFFFFFF) end
+end
 
-	if Config.ult then
-		local rDmg = 0
-		if myHero:CanUseSpell(_R) == READY then
-			for i = 1, heroManager.iCount, 1 do
-				local target = heroManager:getHero(i)
-				if ValidTarget(target) then
-					rDmg = (getDmg("R", target, myHero)-80)
-					if target ~= nil and target.team ~= myHero.team and not target.dead and target.visible
-					and GetDistance(target) <= 3000 and GetDistance(target) > 500 and target.health < rDmg then
-						DrawCircle(target.x, target.y, target.z,100, 0xFF0000)
-						DrawCircle(target.x, target.y, target.z,150, 0xFF0000)
-						DrawCircle(target.x, target.y, target.z,200, 0xFF0000)
-						DrawCircle(target.x, target.y, target.z,300, 0xFF0000)
-						DrawText("Press R to Snipe!!",50,520,100,0xFFFF0000)
-						PrintFloatText(target,0,"Ulti!!!")
-						if Config.autoult then
-							CastSpell(_R, target)
-						end
-					end
-				end
+function combo()
+	if target ~= nil then
+		if menu.comboSubMenu.comboQ then
+			if GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
+		end
+
+		if menu.comboSubMenu.comboW then 
+			if GetDistance(target) <= skillW.range and wPosition ~= nil  and myHero:CanUseSpell(_W) == READY then
+				CastSpell(_W, wPosition.x, wPosition.z)
+			end
+		end
+
+		if menu.comboSubMenu.comboE then 
+			if GetDistance(target) <= skillE.range and ePosition ~= nil and myHero:CanUseSpell(_E) == READY then
+				CastSpell(_E, ePosition.x, ePosition.z)
 			end
 		end
 	end
 end
 
-function minionCollision(predic, width, range)
-	for _, minionObjectE in pairs(enemyMinions.objects) do
-		if predic ~= nil and player:GetDistance(minionObjectE) < range then
-			ex = player.x
-			ez = player.z
-			tx = predic.x
-			tz = predic.z
-			dx = ex - tx
-			dz = ez - tz
-			if dx ~= 0 then
-				m = dz/dx
-				c = ez - m*ex
+function harass()
+	if target ~= nil then
+		if menu.harassSubMenu.harassQ then
+			if GetDistance(target) <= skillQ.range and myHero:CanUseSpell(_Q) == READY and qPosition ~= nil and checkManaHarass() then
+				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
-			mx = minionObjectE.x
-			mz = minionObjectE.z
-			distanc = (math.abs(mz - m*mx - c))/(math.sqrt(m*m+1))
-			if distanc < width and math.sqrt((tx - ex)*(tx - ex) + (tz - ez)*(tz - ez)) > math.sqrt((tx - mx)*(tx - mx) + (tz - mz)*(tz - mz)) then
-				return true
+		end
+
+		if menu.harassSubMenu.harassE then
+			if GetDistance(target) <= skillE.range and myHero:CanUseSpell(_E) == READY and ePosition ~= nil and checkManaHarass() then
+				CastSpell(_E, ePosition.x, ePosition.z)
 			end
 		end
 	end
-	return false
+end
+
+function finisher()
+	if target ~= nil then
+		if menu.finisherSubMenu.finishQ then
+			local adDamage = getDmg("AD", target, myHero)
+			local qDamage = getDmg("Q", target, myHero) + adDamage
+			if GetDistance(target) <= skillQ.range and qDamage >= target.health and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
+		end
+
+		if menu.finisherSubMenu.finishE then
+			local eDamage = getDmg("E", target, myHero) + myHero.ap
+			if GetDistance(target) <= skillE.range and eDamage >= target.health and ePosition ~= nil and myHero:CanUseSpell(_E) == READY then
+				CastSpell(_E, ePosition.x, ePosition.z)
+			end
+		end
+
+		if menu.finisherSubMenu.finishR then
+			local adDamage = getDmg("AD", target, myHero)
+			local rDamage = getDmg("R", target, myHero)
+			if GetDistance(target) >= menu.finisherSubMenu.finishRRange and GetDistance(target) <= skillR.range and rDamage >= target.health and myHero:CanUseSpell(_R) == READY then
+				print("Should cast ult while our dmg: "..rDamage.. " and their health: ".. target.health)
+				CastSpell(_R, target)
+			end
+		end
+	end
+end
+
+function checkManaHarass()
+	if myHero.mana >= myHero.maxMana * (menu.managementOptions.manaProcentHarass / 100) then
+		return true
+	else
+		return false
+	end
+end
+
+function getRRange()
+	if player:GetSpellData(_R).level == 1 or player:GetSpellData(_R).level == 0 then
+		return 2000
+	elseif player:GetSpellData(_R).level == 2 then
+		return 2500 
+	elseif player:GetSpellData(_R).level == 3 then
+		return 3000
+	end
+end
+
+function menu()
+	menu = scriptConfig("AesCaitlyn", "aescaitlyn")
+	-- Combo submenu
+	menu:addSubMenu("Combo options", "comboSubMenu")
+	menu.comboSubMenu:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.comboSubMenu:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.comboSubMenu:addParam("comboE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	-- Harass submenu
+	menu:addSubMenu("Harass options", "harassSubMenu")
+	menu.harassSubMenu:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.harassSubMenu:addParam("harassE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	-- Finisher submenu
+	menu:addSubMenu("Finisher options", "finisherSubMenu")
+	menu.finisherSubMenu:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.finisherSubMenu:addParam("finishE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.finisherSubMenu:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.finisherSubMenu:addParam("finishRRange", "Minimum range for "..skillR.spellName, SCRIPT_PARAM_SLICE, 700, 0, 3000, 0)
+	-- Draw submenu
+	menu:addSubMenu("Draw options", "drawSubMenu")
+	menu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	menu.drawSubMenu:addParam("drawW", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	menu.drawSubMenu:addParam("drawE", "Draw "..skillE.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	menu.drawSubMenu:addParam("drawR", "Draw "..skillR.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	-- Management submenu
+	menu:addSubMenu("Management options", "managementOptions")
+	menu.managementOptions:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
+	-- Script bottoms
+	menu:addParam("combo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+	menu:addParam("harass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
 end
