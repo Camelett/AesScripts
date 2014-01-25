@@ -19,13 +19,13 @@ local skillR = {spellName = "Ace in the Hole", range = 2000}
 
 -- Prediction
 if VIP_USER then
-        predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
-        predictionW = prodiction:AddProdictionObject(_W, skillE.range, skillE.speed * 1000, skillE.delay / 1000)
-        predictionE = prodiction:AddProdictionObject(_E, skillE.range, skillE.speed * 1000, skillE.delay / 1000)
+	predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000)
+	predictionW = prodiction:AddProdictionObject(_W, skillE.range, skillE.speed * 1000, skillE.delay / 1000)
+	predictionE = prodiction:AddProdictionObject(_E, skillE.range, skillE.speed * 1000, skillE.delay / 1000, skillE.width)
 else
-        predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
-        predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
-        predictionE = TargetPrediction(skillE.range, skillE.speed, skillE.delay)
+	predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay)
+	predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
+	predictionE = TargetPrediction(skillE.range, skillE.speed, skillE.delay, skillE.width)
 end
 
 -- Collision
