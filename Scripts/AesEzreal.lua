@@ -4,13 +4,13 @@ if myHero.charName ~= "Ezreal" then return end
 if VIP_USER then
 	require "Prodiction"
 	require "Collision"
+	prodiction = ProdictManager.GetInstance()
 end
 
 -- Variables
 local target
 local enemyMinions
 local version = 1.3
-local prodiction = ProdictManager.GetInstance()
 
 -- Spell information
 local skillQ = {spellName = "Mystic Shot", range = 1150, speed = 2.0, delay = 251, width = 80}
@@ -70,7 +70,7 @@ end
 
 function combo()
 	if target ~= nil then
-		if menu.comboOptions.comboQ and GetDistance(target) <= skillQ.range and qPosition ~= nil then
+		if menu.comboOptions.comboQ and GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
 			if VIP_USER then
 				if not qCollision:GetMinionCollision(myHero, qPosition) then
 					CastSpell(_Q, qPosition.x, qPosition.z)
@@ -82,11 +82,11 @@ function combo()
 			end
 		end
 		
-		if menu.comboOptions.comboW and GetDistance(target) <= skillW.range and wPosition ~= nil then
-			CastSpell(_W, wPosition.x, wPosition.z)
+		if menu.comboOptions.comboW and GetDistance(target) <= skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
+			CastSpell(_W, wPosition.x, wPosition.z
 		end
 		
-		if menu.comboOptions.comboR and GetDistance(target) <= skillR.range and rPosition ~= nil then
+		if menu.comboOptions.comboR and GetDistance(target) <= skillR.range and rPosition ~= nil and myHero:CanUseSpell(_R) == READY then
 			CastSpell(_R, rPosition.x, rPosition.z)
 		end
 	end
@@ -94,7 +94,7 @@ end
 
 function harass()
 	if target ~= nil then
-		if menu.harassOptions.harassQ and GetDistance(target) <= skillQ.range and qPosition ~= nil then
+		if menu.harassOptions.harassQ and GetDistance(target) <= skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
 			if VIP_USER then
 				if not qCollision:GetMinionCollision(myHero, qPosition) and checkManaHarass() then
 					CastSpell(_Q, qPosition.x, qPosition.z)
@@ -106,7 +106,7 @@ function harass()
 			end
 		end
 		
-		if menu.harassOptions.harassW and GetDistance(target) <= skillW.range and wPosition ~= nil then
+		if menu.harassOptions.harassW and GetDistance(target) <= skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
 			if checkManaHarass() then
 				CastSpell(_W, wPosition.x, wPosition.z)
 			end
@@ -119,7 +119,7 @@ function farm()
 		for i, minion in pairs(enemyMinions.objects) do
 			local adDamage = getDmg("AD", minion, myHero)
 			local qDamage = getDmg("Q", minion, myHero) + adDamage + myHero.ap		
-			if not minion.dead and GetDistance(minion) <= skillQ.range and qDamage >= minion.health then
+			if not minion.dead and GetDistance(minion) <= skillQ.range and qDamage >= minion.health and myHero:CanUseSpell(_Q) == READY then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, minion) then
 						CastSpell(_Q, minion.x, minion.z)
@@ -139,14 +139,14 @@ function finisher()
 		if menu.finisherOptions.finishQ then
 			local adDamage = getDmg("AD", target, myHero)
 			local qDamage = getDmg("Q", target, myHero) + adDamage + myHero.ap
-			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil and not qCollision then
+			if qDamage >= target.health and GetDistance(target) <= skillQ.range and qPosition ~= nil and not qCollision and myHero:CanUseSpell(_Q) == READY then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
 		
 		if menu.finisherOptions.finishW then
 			local wDamage = getDmg("W", target, myHero) + myHero.ap
-			if wDamage >= target.health and GetDistance(target) <= skillW.range and wPosition ~= nil then
+			if wDamage >= target.health and GetDistance(target) <= skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
 				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
@@ -154,7 +154,7 @@ function finisher()
 		if menu.finisherOptions.finishR then
 			local adDamage = getDmg("AD", target, myHero)
 			local rDamage = getDmg("R", target, myHero) + adDamage + myHero.ap
-			if rDamage > target.health and GetDistance(target) <= skillR.range and rPosition ~= nil then
+			if rDamage > target.health and GetDistance(target) <= skillR.range and rPosition ~= nil and myHero:CanUseSpell(_R) == READY then
 				CastSpell(_R, rPosition.x, rPosition.z)
 			end
 		end
