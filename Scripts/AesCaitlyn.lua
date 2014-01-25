@@ -90,7 +90,7 @@ end
 
 function harass()
 	if target ~= nil then
-		if menu.harassSubMenu.harassQ and qPostion ~= nil and skillQ.range >= GetDistance(target) and checkManaHarass() then
+		if menu.harassSubMenu.harassQ and skillQ.range >= GetDistance(target) and checkManaHarass() then
 			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
 
