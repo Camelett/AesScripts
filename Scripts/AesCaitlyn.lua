@@ -14,7 +14,7 @@ local rKillable = false
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 640}
-local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 2.0, delay = 500}
+local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 1.5, delay = 500}
 local skillE = {spellName = "90 Caliber Net", range = 1000, speed = 2.0, delay = 10, width = 80}
 local skillR = {spellName = "Ace in the Hole", range = 2000}
 
@@ -123,12 +123,11 @@ end
 
 function finisher()
 	if target ~= nil then
-		
+
 		local adDamage = getDmg("AD", target, myHero)
-		local radDamage = (adDamage / 100) * 70
 		local qDamage = getDmg("Q", target, myHero) + adDamage
 		local eDamage = getDmg("E", target, myHero) + myHero.ap
-		local rDamage = getDmg("R", target, myHero) + radDamage
+		local rDamage = getDmg("R", target, myHero)
 
 		if menu.finisherSubMenu.finishQ and qPosition ~= nil and skillQ.range >= GetDistance(target) and qDamage >= target.health and not target.dead and target.visible then
 			CastSpell(_Q, qPosition.x, qPosition.z)
