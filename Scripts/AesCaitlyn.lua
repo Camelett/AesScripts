@@ -9,7 +9,8 @@ end
 
 -- Variables
 local target
-local version = 1.1
+local version = 1.2
+local rKillable = false
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 640}
@@ -64,6 +65,18 @@ function OnDraw()
 	if menu.drawSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFFFFFF) end
 	if menu.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillE.range, 0xFFFFFF) end
 	if menu.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFFFFFF) end
+	if menu.drawSubMenu.finisherR then
+		if target ~= nil then
+			local rDamage = getDmg("R", target, myHero)
+			if GetDistance(target) <= skillR.range and rDamage > target.health and not target.dead and target.visible then
+				rKillable = true
+				PrintFloatText(target, 0, "Press R to do tons of damage")
+				DrawCircle(target.x, target.y, target.z, 150, 0xFF0000)
+				DrawCircle(target.x, target.y, target.z, 200, 0xFF0000)
+				DrawCircle(target.x, target.y, target.z, 250, 0xFF0000)
+			end
+		end
+	end
 end
 
 function combo()
@@ -110,17 +123,18 @@ end
 
 function finisher()
 	if target ~= nil then
-
+		
 		local adDamage = getDmg("AD", target, myHero)
+		local radDamage = (adDamage / 100) * 70
 		local qDamage = getDmg("Q", target, myHero) + adDamage
 		local eDamage = getDmg("E", target, myHero) + myHero.ap
-		local rDamage = getDmg("R", target, myHero)
+		local rDamage = getDmg("R", target, myHero) + radDamage
 
-		if menu.finisherSubMenu.finishQ and qPosition ~= nil and skillQ.range >= GetDistance(target) and qDamage >= target.health then
+		if menu.finisherSubMenu.finishQ and qPosition ~= nil and skillQ.range >= GetDistance(target) and qDamage >= target.health and not target.dead and target.visible then
 			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
 
-		if menu.finisherSubMenu.finishE and ePosition ~= nil and skillE.range >= GetDistance(target) and eDamage >= target.health then
+		if menu.finisherSubMenu.finishE and ePosition ~= nil and skillE.range >= GetDistance(target) and eDamage >= target.health and not target.dead and target.visible then
 			if VIP_USER then
 				if not eCollision:GetMinionCollision(myHero, qPosition) then
 					CastSpell(_E, ePosition.x, ePosition.z)
@@ -132,7 +146,7 @@ function finisher()
 			end
 		end
 
-		if menu.finisherSubMenu.finishR and GetDistance(target) >= menu.finisherSubMenu.finishRRange and skillR.range >= GetDistance(target) and rDamage > target.health then
+		if rKillable == true and menu.finisherSubMenu.finishR then
 			CastSpell(_R, target)
 		end
 	end
@@ -156,6 +170,10 @@ function getRRange()
 	end
 end
 
+function OnWndMsg()
+
+end
+
 function menu()
 	menu = scriptConfig("AesCaitlyn", "aescaitlyn")
 	-- Combo submenu
@@ -171,14 +189,14 @@ function menu()
 	menu:addSubMenu("Finisher options", "finisherSubMenu")
 	menu.finisherSubMenu:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.finisherSubMenu:addParam("finishE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.finisherSubMenu:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.finisherSubMenu:addParam("finishRRange", "Minimum range for "..skillR.spellName, SCRIPT_PARAM_SLICE, 700, 0, 3000, 0)
+	menu.finisherSubMenu:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 82)
 	-- Draw submenu
 	menu:addSubMenu("Draw options", "drawSubMenu")
 	menu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	menu.drawSubMenu:addParam("drawW", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	menu.drawSubMenu:addParam("drawE", "Draw "..skillE.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	menu.drawSubMenu:addParam("drawR", "Draw "..skillR.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	menu.drawSubMenu:addParam("finisherR", "Draw text under killable target with "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
 	-- Management submenu
 	menu:addSubMenu("Management options", "managementOptions")
 	menu.managementOptions:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
