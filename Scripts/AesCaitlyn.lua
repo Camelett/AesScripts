@@ -9,7 +9,7 @@ end
 
 -- Variables
 local target
-local version = 1.2
+local version = 1.3
 local rKillable = false
 
 -- Skills information
@@ -57,6 +57,7 @@ function OnTick()
 
 	if menu.combo then combo() end
 	if menu.harass then harass() end
+	if menu.trappingSubMenu.autoW then trap() end
 	if menu.finisherSubMenu.finishQ or menu.finisherSubMenu.finishE or menu.finisherSubMenu.finishR then finisher() end
 end
 
@@ -149,6 +150,16 @@ function finisher()
 	end
 end
 
+function trap()
+	if menu.trappingSubMenu.autoW then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			if GetDistance(enemy) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY and not enemy.canMove then
+				CastSpell(_W, enemy.x, enemy.z)
+			end
+		end
+	end
+end
+
 function checkManaHarass()
 	if myHero.mana >= myHero.maxMana * (menu.managementOptions.manaProcentHarass / 100) then
 		return true
@@ -167,10 +178,6 @@ function getRRange()
 	end
 end
 
-function OnWndMsg()
-
-end
-
 function menu()
 	menu = scriptConfig("AesCaitlyn", "aescaitlyn")
 	-- Combo submenu
@@ -187,6 +194,9 @@ function menu()
 	menu.finisherSubMenu:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.finisherSubMenu:addParam("finishE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.finisherSubMenu:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 82)
+	-- Traps submenu
+	menu:addSubMenu("Trapping options", "trappingSubMenu")
+	menu.trappingSubMenu:addParam("autoW", "Place "..skillW.spellName.." under stunned target", SCRIPT_PARAM_ONOFF, false)
 	-- Draw submenu
 	menu:addSubMenu("Draw options", "drawSubMenu")
 	menu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
