@@ -9,7 +9,7 @@ end
 
 -- Variables
 local target
-local version = 1.3
+local version = 1.4
 local rKillable = false
 
 -- Skills information
@@ -82,13 +82,10 @@ end
 
 function combo()
 	if target ~= nil then
-		if menu.comboSubMenu.comboQ and qPosition ~= nil and skillQ.range > GetDistance(target) then
+		if menu.comboSubMenu.comboQ and qPosition ~= nil and menu.comboSubMenu.comboRangeQ > GetDistance(target) then
 			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
-		if menu.comboSubMenu.comboW and wPosition ~= nil and skillW.range > GetDistance(target) then
-			CastSpell(_W, wPosition.x, wPosition.z)
-		end
-		if menu.comboSubMenu.comboE and ePosition ~= nil and skillE.range > GetDistance(target) then
+		if menu.comboSubMenu.comboE and ePosition ~= nil and menu.comboSubMenu.comboRangeE > GetDistance(target) then
 			if VIP_USER then
 				if not GetMinionCollision(myHero, target, skillE.width) then
 					CastSpell(_E, ePosition.x, ePosition.z)
@@ -99,16 +96,19 @@ function combo()
 				end
 			end
 		end
+		if menu.comboSubMenu.comboW and wPosition ~= nil and menu.comboSubMenu.comboRangeW > GetDistance(target) then
+			CastSpell(_W, wPosition.x, wPosition.z)
+		end
 	end
 end
 
 function harass()
 	if target ~= nil then
-		if menu.harassSubMenu.harassQ and qPosition ~= nil and skillQ.range > GetDistance(target) and checkManaHarass() then
+		if menu.harassSubMenu.harassQ and qPosition ~= nil and menu.harassSubMenu.harassRangeQ > GetDistance(target) and checkManaHarass() then
 			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
 
-		if menu.harassSubMenu.harassE and ePosition ~= nil and skillE.range > GetDistance(target) and checkManaHarass() then
+		if menu.harassSubMenu.harassE and ePosition ~= nil and menu.harassSubMenu.harassRangeE > GetDistance(target) and checkManaHarass() then
 			if VIP_USER then
 				if not eCollision:GetMinionCollision(myHero, qPosition) then
 					CastSpell(_E, ePosition.x, ePosition.z)
@@ -160,6 +160,19 @@ function trap()
 	end
 end
 
+function OnWndMsg(msg, wParam)
+	if wParam == 69 and msg == KEY_DOWN then
+		if menu.miscSubMenu.reverseE and myHero:CanUseSpell(_E) == READY then
+			-- credits to jbman for calculations
+			local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
+			local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
+			local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
+
+			CastSpell(_E, DashPos.x, DashPos.z)
+		end
+	end
+end
+
 function checkManaHarass()
 	if myHero.mana >= myHero.maxMana * (menu.managementOptions.manaProcentHarass / 100) then
 		return true
@@ -185,10 +198,15 @@ function menu()
 	menu.comboSubMenu:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.comboSubMenu:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.comboSubMenu:addParam("comboE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
+	menu.comboSubMenu:addParam("comboRangeW", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 800, 0, skillW.range, 0)
+	menu.comboSubMenu:addParam("comboRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
 	-- Harass submenu
 	menu:addSubMenu("Harass options", "harassSubMenu")
 	menu.harassSubMenu:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.harassSubMenu:addParam("harassE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.harassSubMenu:addParam("harassRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
+	menu.harassSubMenu:addParam("harassRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
 	-- Finisher submenu
 	menu:addSubMenu("Finisher options", "finisherSubMenu")
 	menu.finisherSubMenu:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
@@ -197,6 +215,9 @@ function menu()
 	-- Traps submenu
 	menu:addSubMenu("Trapping options", "trappingSubMenu")
 	menu.trappingSubMenu:addParam("autoW", "Place "..skillW.spellName.." under stunned target", SCRIPT_PARAM_ONOFF, false)
+	-- Misc submenu
+	menu:addSubMenu("Misc options", "miscSubMenu")
+	menu.miscSubMenu:addParam("reverseE", "Use reversed "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
 	-- Draw submenu
 	menu:addSubMenu("Draw options", "drawSubMenu")
 	menu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
@@ -210,4 +231,5 @@ function menu()
 	-- Script bottoms
 	menu:addParam("combo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 	menu:addParam("harass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
+	menu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
 end
