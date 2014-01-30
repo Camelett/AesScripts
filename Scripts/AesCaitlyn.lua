@@ -14,7 +14,7 @@ local rKillable = false
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 640}
-local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 1.5, delay = 500}
+local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 1.45, delay = 500}
 local skillE = {spellName = "90 Caliber Net", range = 1000, speed = 2.0, delay = 10, width = 80}
 local skillR = {spellName = "Ace in the Hole", range = 2000}
 
@@ -168,7 +168,7 @@ function OnWndMsg(msg, wParam)
 			local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 			local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 
-			CastSpell(_E, DashPos.x, DashPos.z)
+			CastSpell(_E, DashPos.x, DashPos.y, DashPos.z)
 		end
 	end
 end
