@@ -58,6 +58,7 @@ function OnTick()
 	if menu.combo then combo() end
 	if menu.harass then harass() end
 	if menu.trappingSubMenu.autoW then trap() end
+	if menu.miscSubMenu.reverseE then reversedE() end
 	if menu.finisherSubMenu.finishQ or menu.finisherSubMenu.finishE or menu.finisherSubMenu.finishR then finisher() end
 end
 
@@ -160,16 +161,14 @@ function trap()
 	end
 end
 
-function OnWndMsg(msg, wParam)
-	if wParam == 69 and msg == KEY_DOWN then
-		if menu.miscSubMenu.reverseE and myHero:CanUseSpell(_E) == READY then
-			-- credits to jbman for calculations
-			local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
-			local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
-			local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
+function reversedE()
+	if menu.miscSubMenu.reverseE and myHero:CanUseSpell(_E) == READY then
+		-- credits to jbman for calculations
+		local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
+		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 
-			CastSpell(_E, DashPos.x, DashPos.y, DashPos.z)
-		end
+		CastSpell(_E, DashPos.x, DashPos.y, DashPos.z)
 	end
 end
 
@@ -217,7 +216,7 @@ function menu()
 	menu.trappingSubMenu:addParam("autoW", "Place "..skillW.spellName.." under stunned target", SCRIPT_PARAM_ONOFF, false)
 	-- Misc submenu
 	menu:addSubMenu("Misc options", "miscSubMenu")
-	menu.miscSubMenu:addParam("reverseE", "Use reversed "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.miscSubMenu:addParam("reverseE", "Use reversed "..skillE.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 69)
 	-- Draw submenu
 	menu:addSubMenu("Draw options", "drawSubMenu")
 	menu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
