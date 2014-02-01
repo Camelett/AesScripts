@@ -4,13 +4,12 @@ if myHero.charName ~= "Caitlyn" then return end
 if VIP_USER then
 	require "Collision"
 	require "Prodiction"
-	prodiction = ProdictManager.GetInstance()
 end
 
 -- Variables
-local target
+local target = nil
 local version = 1.4
-local rKillable = false
+if VIP_USER then prodiction = ProdictManager.GetInstance() end
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 640}
@@ -49,12 +48,6 @@ function OnTick()
 		target = targetSelector.target
 	end
 
-	if target ~= nil then
-		qPosition = predictionQ:GetPrediction(target)
-		wPosition = predictionW:GetPrediction(target)
-		ePosition = predictionE:GetPrediction(target)
-	end
-
 	if menu.combo then combo() end
 	if menu.harass then harass() end
 	if menu.trappingSubMenu.autoW then trap() end
@@ -68,14 +61,14 @@ function OnDraw()
 	if menu.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillE.range, 0xFFFFFF) end
 	if menu.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFFFFFF) end
 	if menu.drawSubMenu.finisherR then
-		if target ~= nil then
-			local rDamage = getDmg("R", target, myHero)
-			if GetDistance(target) <= skillR.range and rDamage > target.health and not target.dead and target.visible then
-				rKillable = true
-				PrintFloatText(target, 0, "Press R to do tons of damage")
-				DrawCircle(target.x, target.y, target.z, 150, 0xFF0000)
-				DrawCircle(target.x, target.y, target.z, 200, 0xFF0000)
-				DrawCircle(target.x, target.y, target.z, 250, 0xFF0000)
+		for i, enemy in pairs(GetEnemyHeroes()) do	
+		local rDamage = getDmg("R", enemy, myHero)
+
+			if GetDistance(enemy) <= skillR.range and rDamage > enemy.health and not enemy.dead and enemy.visible then
+				PrintFloatText(enemy, 0, "Press R to do tons of damage")
+				DrawCircle(enemy.x, enemy.y, enemy.z, 150, 0xFF0000)
+				DrawCircle(enemy.x, enemy.y, enemy.z, 200, 0xFF0000)
+				DrawCircle(enemy.x, enemy.y, enemy.z, 250, 0xFF0000)
 			end
 		end
 	end
@@ -83,13 +76,22 @@ end
 
 function combo()
 	if target ~= nil then
-		if menu.comboSubMenu.comboQ and qPosition ~= nil and menu.comboSubMenu.comboRangeQ > GetDistance(target) then
-			CastSpell(_Q, qPosition.x, qPosition.z)
+		if menu.comboSubMenu.comboQ then
+			local qPosition = predictionQ:GetPrediction(target)
+
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) and menu.comboSubMenu.comboRangeQ > GetDistance(target) then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
 		end
-		if menu.comboSubMenu.comboE and ePosition ~= nil and menu.comboSubMenu.comboRangeE > GetDistance(target) then
-			if VIP_USER then
-				if not GetMinionCollision(myHero, target, skillE.width) then
-					CastSpell(_E, ePosition.x, ePosition.z)
+
+		if menu.comboSubMenu.comboE then
+			local ePosition = predictionE:GetPrediction(target)
+
+			if ePosition ~= nil and myHero:CanUseSpell(_E) and menu.comboSubMenu.comboRangeE > GetDistance(target) then
+				if VIP_USER then
+					if not GetMinionCollision(myHero, target, skillE.width) then
+						CastSpell(_E, ePosition.x, ePosition.z)
+					end
 				end
 			else
 				if not GetMinionCollision(myHero, target, skillE.width) then 
@@ -97,26 +99,39 @@ function combo()
 				end
 			end
 		end
-		if menu.comboSubMenu.comboW and wPosition ~= nil and menu.comboSubMenu.comboRangeW > GetDistance(target) then
-			CastSpell(_W, wPosition.x, wPosition.z)
+
+		if menu.comboSubMenu.comboW then
+			local wPosition = predictionW:GetPrediction(target)
+
+			if wPosition ~= nil and myHero:CanUseSpell(_W) and menu.comboSubMenu.comboRangeW > GetDistance(target) then
+				CastSpell(_W, wPosition.x, wPosition.z)
+			end
 		end
 	end
 end
 
 function harass()
 	if target ~= nil then
-		if menu.harassSubMenu.harassQ and qPosition ~= nil and menu.harassSubMenu.harassRangeQ > GetDistance(target) and checkManaHarass() then
-			CastSpell(_Q, qPosition.x, qPosition.z)
+		if menu.harassSubMenu.harassQ then
+			local qPosition = predictionQ:GetPrediction(target)
+
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) and menu.harassSubMenu.harassRangeQ > GetDistance(target) and checkManaHarass() then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
 		end
 
-		if menu.harassSubMenu.harassE and ePosition ~= nil and menu.harassSubMenu.harassRangeE > GetDistance(target) and checkManaHarass() then
-			if VIP_USER then
-				if not eCollision:GetMinionCollision(myHero, qPosition) then
-					CastSpell(_E, ePosition.x, ePosition.z)
-				end
-			else
-				if not GetMinionCollision(myHero, target, skillE.width) then
-					CastSpell(_E, ePosition.x, ePosition.z)
+		if menu.harassSubMenu.harassE then
+			local ePosition = predictionE:GetPrediction(target)
+
+			if ePosition ~= nil and myHero:CanUseSpell(_E) and menu.harassSubMenu.harassRangeE > GetDistance(target) and checkManaHarass() then
+				if VIP_USER then
+					if not eCollision:GetMinionCollision(myHero, qPosition) then
+						CastSpell(_E, ePosition.x, ePosition.z)
+					end
+				else
+					if not GetMinionCollision(myHero, target, skillE.width) then
+						CastSpell(_E, ePosition.x, ePosition.z)
+					end
 				end
 			end
 		end
@@ -124,29 +139,42 @@ function harass()
 end
 
 function finisher()
-	if target ~= nil then
-		local qDamage = getDmg("Q", target, myHero)
-		local eDamage = getDmg("E", target, myHero)
-		local rDamage = getDmg("R", target, myHero)
+	if menu.finisherSubMenu.finishQ then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local qPosition = predictionQ:GetPrediction(enemy)
+			local qDamage = getDmg("Q", enemy, myHero)
 
-		if menu.finisherSubMenu.finishQ and qPosition ~= nil and skillQ.range > GetDistance(target) and qDamage > target.health and not target.dead and target.visible then
-			CastSpell(_Q, qPosition.x, qPosition.z)
+			if qPosition ~= nil and skillQ.range > GetDistance(enemy) and qDamage > enemy.health and not enemy.dead and enemy.visible then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
 		end
+	end
 
-		if menu.finisherSubMenu.finishE and ePosition ~= nil and skillE.range > GetDistance(target) and eDamage > target.health and not target.dead and target.visible then
-			if VIP_USER then
-				if not eCollision:GetMinionCollision(myHero, qPosition) then
-					CastSpell(_E, ePosition.x, ePosition.z)
-				end
-			else
-				if not GetMinionCollision(myHero, target, skillE.width) then
-					CastSpell(_E, ePosition.x, ePosition.z)
+	if menu.finisherSubMenu.finishE then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local eDamage = getDmg("E", enemy, myHero)
+
+			if ePosition ~= nil and myHero:CanUseSpell(_E) and skillE.range > GetDistance(enemy) and eDamage > enemy.health and not enemy.dead and enemy.visible then
+				if VIP_USER then
+					if not eCollision:GetMinionCollision(myHero, qPosition) then
+						CastSpell(_E, ePosition.x, ePosition.z)
+					end
+				else
+					if not GetMinionCollision(myHero, enemy, skillE.width) then
+						CastSpell(_E, ePosition.x, ePosition.z)
+					end
 				end
 			end
 		end
+	end
 
-		if rKillable == true and menu.finisherSubMenu.finishR then
-			CastSpell(_R, target)
+	if menu.finisherSubMenu.finishR then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local rDamage = getDmg("R", enemy, myHero)
+
+			if enemy~= nil and GetDistance(enemy) <= skillR.range and rDamage > enemy.health and not enemy.dead and enemy.visible then
+				CastSpell(_R, enemy)
+			end
 		end
 	end
 end
