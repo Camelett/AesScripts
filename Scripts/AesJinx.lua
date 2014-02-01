@@ -17,9 +17,9 @@ if VIP_USER then prodiction = ProdictManager.GetInstance() end
 --Skill table
 local skillsTable = {
 	skillQ = {name = "Switcheroo!", minigunRange = 525, fishRange = 525},
-	skillW = {name = "Zap!", range = 1500, speed = 3.35 , delay = 600, width = 100},
+	skillW = {name = "Zap!", range = 1450, speed = 3.3 , delay = 600, width = 100},
 	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 500},
-	skillR = {name = "Super Mega Death Rocket!", range = math.huge, speed = 2.0, delay = 600, radius = 200}
+	skillR = {name = "Super Mega Death Rocket!", range = 2000, speed = 2.2, delay = 600, radius = 120}
 }
 
 --Prediction
@@ -39,20 +39,19 @@ if VIP_USER then
 end
 
 function OnLoad()
-	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
+	ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
 
 	menu()
 	print("AesJinx version: "..version.." loaded!")
 end
 
 function OnTick()
-	targetSelector:update()
+	ts:update()
+
 	getQRange()
 	getGun()
 
-	if targetSelector.target ~= nil then
-		target = targetSelector.target
-	end
+	target = ts.target
 
 	if config.basicSubMenu.combo then
 		combo()
@@ -60,12 +59,16 @@ function OnTick()
 	end
 
 	if config.basicSubMenu.harass then harass() end
-
 	if config.aggressiveSubMenu.finisherSubMenu.finishW or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then chompers() end
+	print(target)
 end
 
 function OnDraw()
+	DrawCircle(myHero.x, myHero.y, myHero.z, 2000, 0xFFFFFF)
+	if target ~= nil then
+		DrawCircle(target.x, target.y, target.z, 200, 0xFFFFFF)
+	end
 	if config.drawSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, ARGB(255, 255, 0, 0)) end
 	if config.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillE.range, ARGB(255, 255, 0, 0)) end
 	if config.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillR.range, ARGB(255, 255, 0, 0)) end
@@ -174,9 +177,11 @@ end
 function rocketLauncher()
 	if target ~= nil then
 		if config.aggressiveSubMenu.comboSubMenu.comboQ or config.aggressiveSubMenu.harassSubMenu.harassQ and checkManaRocket() then
-			if GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
+			if myHero:CanUseSpell(_Q) and GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
+				print("casting minigun")
 				CastSpell(_Q)
-			elseif GetDistance(target) >= skillsTable.skillQ.minigunRange and rocket == false then
+			elseif myHero:CanUseSpell(_Q) and GetDistance(target) >= skillsTable.skillQ.minigunRange and rocket == false then
+				print("casting rocket")
 				CastSpell(_Q)
 			end
 		end
