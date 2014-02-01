@@ -44,9 +44,7 @@ function OnTick()
 	targetSelector:update()
 	skillR.range = getRRange()
 
-	if targetSelector.target ~= nil then
-		target = targetSelector.target
-	end
+	target = targetSelector.target
 
 	if menu.combo then combo() end
 	if menu.harass then harass() end
