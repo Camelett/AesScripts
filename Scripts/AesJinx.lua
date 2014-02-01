@@ -9,12 +9,14 @@ require "AoE_Skillshot_Position"
 
 --Variables
 local target = nil
-local version = 0.1
+local version = 0.2
+local rocket = false
+
 if VIP_USER then prodiction = ProdictManager.GetInstance() end
 
 --Skill table
 local skillsTable = {
-	skillQ = {name = "Switcheroo!"},
+	skillQ = {name = "Switcheroo!", minigunRange = 525, fishRange = 525},
 	skillW = {name = "Zap!", range = 1500, speed = 3.35 , delay = 600, width = 100},
 	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 500},
 	skillR = {name = "Super Mega Death Rocket!", range = math.huge, speed = 2.0, delay = 600, radius = 200}
@@ -45,13 +47,20 @@ end
 
 function OnTick()
 	targetSelector:update()
+	getQRange()
+	getGun()
 
 	if targetSelector.target ~= nil then
 		target = targetSelector.target
 	end
 
-	if config.basicSubMenu.combo then combo() end
+	if config.basicSubMenu.combo then
+		combo()
+		rocketLauncher()
+	end
+
 	if config.basicSubMenu.harass then harass() end
+
 	if config.aggressiveSubMenu.finisherSubMenu.finishW or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then chompers() end
 end
@@ -155,8 +164,20 @@ function chompers()
 		for i, enemy in pairs(GetEnemyHeroes()) do
 			local ePosition = predictionE:GetPrediction(enemy)
 			
-			if ePosition ~= nil and myHero:CanUseSpell(_E) == READY and GetDistance(enemy) < skillsTable.skillE.range and not enemy.canMove then
+			if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(enemy) < skillsTable.skillE.range and not enemy.canMove then
 				CastSpell(_E, enemy.x, enemy.z)
+			end
+		end
+	end
+end
+
+function rocketLauncher()
+	if target ~= nil then
+		if config.aggressiveSubMenu.comboSubMenu.comboQ or config.aggressiveSubMenu.harassSubMenu.harassQ and checkManaRocket() then
+			if GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
+				CastSpell(_Q)
+			elseif GetDistance(target) >= skillsTable.skillQ.minigunRange and rocket == false then
+				CastSpell(_Q)
 			end
 		end
 	end
@@ -170,6 +191,38 @@ function checkManaHarass()
 	end
 end
 
+function checkManaRocket()
+	if myHero.mana >= myHero.maxMana * (config.managementSubMenu.manaRocket / 100) then
+		return true
+	else
+		return false
+	end 
+end
+
+function getGun()
+	if myHero.range == 525.5 then
+		rocket = false
+	elseif myHero.range > 525.5 then
+		rocket = true
+	end
+end
+
+function getQRange()
+	if myHero:GetSpellData(_Q).level == 1 then
+		skillsTable.skillQ.fishRange = 525 + 75
+	elseif myHero:GetSpellData(_Q).level == 2 then
+		skillsTable.skillQ.fishRange = 525 + 100
+	elseif myHero:GetSpellData(_Q).level == 3 then
+		skillsTable.skillQ.fishRange = 525 + 125
+	elseif myHero:GetSpellData(_Q).level == 4 then
+		skillsTable.skillQ.fishRange = 525 + 150
+	elseif myHero:GetSpellData(_Q).level == 5 then
+		skillsTable.skillQ.fishRange = 525 + 175
+	else
+		skillsTable.skillQ.fishRange = 525
+	end
+end
+
 function menu()
 	config = scriptConfig("AesJinx", "aesjinx")
 	-- Basic submenu
@@ -180,6 +233,7 @@ function menu()
 	-- Aggressive submenu
 	config:addSubMenu("AesJinx: Aggressive settings", "aggressiveSubMenu")
 	config.aggressiveSubMenu:addSubMenu("Combo settings", "comboSubMenu")
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboE", "Use "..skillsTable.skillE.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboR", "Use "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
@@ -199,6 +253,7 @@ function menu()
 	-- Management submenu
 	config:addSubMenu("AesJinx: Management settings", "managementSubMenu")
 	config.managementSubMenu:addParam("manaHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
+	config.managementSubMenu:addParam("manaRocket", "Minimum mana to change gun", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
 	-- Drawing submenu
 	config:addSubMenu("AesJinx: Drawing settings", "drawSubMenu")
 	config.drawSubMenu:addParam("drawW", "Draw "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
