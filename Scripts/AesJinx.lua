@@ -61,14 +61,9 @@ function OnTick()
 	if config.basicSubMenu.harass then harass() end
 	if config.aggressiveSubMenu.finisherSubMenu.finishW or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then chompers() end
-	print(target)
 end
 
 function OnDraw()
-	DrawCircle(myHero.x, myHero.y, myHero.z, 2000, 0xFFFFFF)
-	if target ~= nil then
-		DrawCircle(target.x, target.y, target.z, 200, 0xFFFFFF)
-	end
 	if config.drawSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, ARGB(255, 255, 0, 0)) end
 	if config.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillE.range, ARGB(255, 255, 0, 0)) end
 	if config.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillR.range, ARGB(255, 255, 0, 0)) end
