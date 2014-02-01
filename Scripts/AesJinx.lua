@@ -178,10 +178,8 @@ function rocketLauncher()
 	if target ~= nil then
 		if config.aggressiveSubMenu.comboSubMenu.comboQ or config.aggressiveSubMenu.harassSubMenu.harassQ and checkManaRocket() then
 			if myHero:CanUseSpell(_Q) and GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
-				print("casting minigun")
 				CastSpell(_Q)
 			elseif myHero:CanUseSpell(_Q) and GetDistance(target) >= skillsTable.skillQ.minigunRange and rocket == false then
-				print("casting rocket")
 				CastSpell(_Q)
 			end
 		end
