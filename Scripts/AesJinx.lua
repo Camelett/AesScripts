@@ -9,7 +9,7 @@ require "AoE_Skillshot_Position"
 
 --Variables
 local target = nil
-local version = 0.2
+local version = 0.3
 local rocket = false
 
 if VIP_USER then prodiction = ProdictManager.GetInstance() end
@@ -58,6 +58,7 @@ function OnTick()
 		rocketLauncher()
 	end
 
+	if config.miscSubMenu.autoQ then rocketLauncher() end
 	if config.basicSubMenu.harass then harass() end
 	if config.aggressiveSubMenu.finisherSubMenu.finishW or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then chompers() end
@@ -74,7 +75,7 @@ function combo()
 		if config.aggressiveSubMenu.comboSubMenu.comboW then
 			local wPosition = predictionW:GetPrediction(target)
 			
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(target) < skillsTable.skillW.range then
+			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range then
 				if VIP_USER then
 					if not wCollision:GetMinionCollision(myHero, wPosition) then
 						CastSpell(_W, wPosition.x, wPosition.z)
@@ -90,7 +91,7 @@ function combo()
 		if config.aggressiveSubMenu.comboSubMenu.comboE then
 			local ePosition = predictionE:GetPrediction(target)
 
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(target) < skillsTable.skillE.range then
+			if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(ePosition) < skillsTable.skillE.range then
 				CastSpell(_E, ePosition.x, ePosition.z)
 			end
 		end
@@ -98,7 +99,7 @@ function combo()
 		if config.aggressiveSubMenu.comboSubMenu.comboR then
 			local aoeRPosition = GetAoESpellPosition(skillsTable.skillR.radius, target, skillsTable.skillR.delay)
 
-			if aoeRPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(target) < skillsTable.skillR.range then
+			if aoeRPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(aoeRPosition) < skillsTable.skillR.range then
 				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
 			end
 		end
@@ -110,7 +111,7 @@ function harass()
 		if config.aggressiveSubMenu.harassSubMenu.harassW then
 			local wPosition = predictionW:GetPrediction(target)
 			
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(target) < skillsTable.skillW.range and checkManaHarass() then
+			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range and checkManaHarass() then
 				if VIP_USER then
 					if not wCollision:GetMinionCollision(myHero, wPosition) then
 						CastSpell(_W, wPosition.x, wPosition.z)
@@ -131,7 +132,7 @@ function finisher()
 			local wPosition = predictionW:GetPrediction(enemy)
 			local wDamage = getDmg("W", enemy, myHero)
 
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(enemy) < skillsTable.skillW.range and wDamage > enemy.health then
+			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
 				if VIP_USER then
 					if not wCollision:GetMinionCollision(myHero, wPosition) then
 						CastSpell(_W, wPosition.x, wPosition.z)
@@ -150,7 +151,7 @@ function finisher()
 			local rPosition = predictionR:GetPrediction(enemy)
 			local rDamage = getDmg("R", enemy, myHero)
 
-			if rPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(enemy) < skillsTable.skillR.range and rDamage > enemy.health then
+			if rPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
 				CastSpell(_R, rPosition.x, rPosition.z)
 			end
 		end
@@ -162,7 +163,7 @@ function chompers()
 		for i, enemy in pairs(GetEnemyHeroes()) do
 			local ePosition = predictionE:GetPrediction(enemy)
 			
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(enemy) < skillsTable.skillE.range and not enemy.canMove then
+			if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(ePosition) < skillsTable.skillE.range and not enemy.canMove then
 				CastSpell(_E, enemy.x, enemy.z)
 			end
 		end
@@ -171,13 +172,17 @@ end
 
 function rocketLauncher()
 	if target ~= nil then
-		if config.aggressiveSubMenu.comboSubMenu.comboQ or config.aggressiveSubMenu.harassSubMenu.harassQ and checkManaRocket() then
-			if myHero:CanUseSpell(_Q) and GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
-				CastSpell(_Q)
-			elseif myHero:CanUseSpell(_Q) and GetDistance(target) >= skillsTable.skillQ.minigunRange and rocket == false then
-				CastSpell(_Q)
-			end
+		if myHero:CanUseSpell(_Q) and GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
+			CastSpell(_Q)
+		elseif myHero:CanUseSpell(_Q) and GetDistance(target) >= skillsTable.skillQ.minigunRange and GetDistance(target) <= skillsTable.skillQ.fishRange and rocket == false then
+			CastSpell(_Q)
+		elseif myHero:CanUseSpell(_Q) and GetDistance(target) > skillsTable.skillQ.fishRange and rocket == true then
+			CastSpell(_Q)
 		end
+	end
+
+	if target == nil and rocket == true and config.miscSubMenu.outofrangeQ then
+		CastSpell(_Q)
 	end
 end
 
@@ -222,7 +227,7 @@ function getQRange()
 end
 
 function menu()
-	config = scriptConfig("AesJinx", "aesjinx")
+	config = scriptConfig("AesJinx: Main menu", "aesjinx")
 	-- Basic submenu
 	config:addSubMenu("AesJinx: Basic settings", "basicSubMenu")
 	config.basicSubMenu:addParam("combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
@@ -247,6 +252,11 @@ function menu()
 	config:addSubMenu("AesJinx: Defensive settings", "defensiveSubMenu")
 	config.defensiveSubMenu:addSubMenu("Chompers settings", "chompersSubMenu")
 	config.defensiveSubMenu.chompersSubMenu:addParam("stunChompers", "Use "..skillsTable.skillE.name.." under stunned target",SCRIPT_PARAM_ONOFF, false)
+
+	-- Misc submenu
+	config:addSubMenu("AesJinx: Misc settings", "miscSubMenu")
+	config.miscSubMenu:addParam("autoQ", "Automatically use "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
+	config.miscSubMenu:addParam("outofrangeQ", "Change to minigun, when there is no target", SCRIPT_PARAM_ONOFF, false)
 
 	-- Management submenu
 	config:addSubMenu("AesJinx: Management settings", "managementSubMenu")
