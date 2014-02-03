@@ -16,7 +16,7 @@ local rKillable = false
 local version = 1.4
 
 -- Spell information
-local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2.0, delay = 250, width = 80}
+local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2.0, delay = 250, width = 60}
 local skillW = {spellName = "Essence Flux", range = 1050, speed = 1.6, delay = 250}
 local skillR = {spellName = "Trueshot Barrage", range = 2000, speed = 2.0, delay = 1000, width = 160}
 
@@ -40,7 +40,7 @@ end
 function OnLoad()
 	PrintChat("AesEzreal loaded! Version: "..version)
 	menu()
-	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, false)
+	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, true)
 	enemyMinions = minionManager(MINION_ENEMY, skillR.range, myHero)
 end
 	
@@ -48,16 +48,8 @@ function OnTick()
 	targetSelector:update()
 	enemyMinions:update()
 	
-	if targetSelector.target ~= nil then
-		target = targetSelector.target
-	end
-	
-	if target ~= nil then
-		qPosition = predictionQ:GetPrediction(target)
-		wPosition = predictionW:GetPrediction(target)
-		rPosition = predictionR:GetPrediction(target)
-	end
-	
+	target = targetSelector.target
+
 	if menu.scriptCombo then combo() end
 	if menu.scriptHarass then harass() end
 	if menu.scriptFarm then farm() end
@@ -68,26 +60,30 @@ function OnDraw()
 	if menu.drawOptions.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFF0000) end
 	if menu.drawOptions.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFF0000) end
 	if menu.drawOptions.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFF0000) end
-	if menu.drawOptions.finisherR then
-		if target ~= nil then
-			local rDamage = getDmg("R", target, myHero)
+	for i, enemy in pairs(GetEnemyHeroes()) do
+		if enemy ~= nil then
+			local rPosition = predictionR:GetPrediction(enemy)
+			local rDamage = getDmg("R", enemy, myHero)
 			local rLoweredDamage = (70 / 100) * rDamage
 
-			if VIP_USER and GetDistance(target) < skillR.range then
-				if rCollision:GetMinionCollision(myHero, target) then
+			if VIP_USER and GetDistance(enemy) < skillR.range then
+				if rCollision:GetMinionCollision(myHero, enemy) then
 					rDamage = rDamage - rLoweredDamage
 				end
-			elseif GetDistance(target) < skillR.range then
-				if GetMinionCollision(myHero, target, skillR.width) then
+			elseif GetDistance(enemy) < skillR.range then
+				if GetMinionCollision(myHero, enemy, skillR.width) then
 					rDamage = rDamage - rLoweredDamage
 				end
 			end
-			if GetDistance(target) <= skillR.range and rDamage > target.health and not target.dead and target.visible and myHero:CanUseSpell(_R) == READY then
+
+			if GetDistance(enemy) < skillR.range and rDamage > enemy.health and not enemy.dead and enemy.visible and myHero:CanUseSpell(_R) then
 				rKillable = true
-				PrintFloatText(target, 0, "Press R to do tons of damage")
-				DrawCircle(target.x, target.y, target.z, 150, 0xFF0000)
-				DrawCircle(target.x, target.y, target.z, 200, 0xFF0000)
-				DrawCircle(target.x, target.y, target.z, 250, 0xFF0000)
+				PrintFloatText(enemy, 0, "Press R to do tons of damage")
+				DrawCircle(enemy.x, enemy.y, enemy.z, 150, 0xFF0000)
+				DrawCircle(enemy.x, enemy.y, enemy.z, 200, 0xFF0000)
+				DrawCircle(enemy.x, enemy.y, enemy.z, 250, 0xFF0000)
+			else
+				rKillable = false
 			end
 		end
 	end
@@ -95,81 +91,46 @@ end
 
 function combo()
 	if target ~= nil then
-		if menu.comboOptions.comboQ and GetDistance(target) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY then
-			if VIP_USER then
-				if not qCollision:GetMinionCollision(myHero, qPosition) then
-					CastSpell(_Q, qPosition.x, qPosition.z)
-				end
-			else
-				if not GetMinionCollision(myHero, target, skillQ.width) then
-					CastSpell(_Q, qPosition.x, qPosition.z)
+		if menu.comboOptions.comboQ then
+			local qPosition = predictionQ:GetPrediction(target)
+
+			if GetDistance(target) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) then
+				if VIP_USER then
+					if not qCollision:GetMinionCollision(myHero, qPosition) then
+						CastSpell(_Q, qPosition.x, qPosition.z)
+					end
+				else
+					if not GetMinionCollision(myHero, target, skillQ.width) then
+						CastSpell(_Q, qPosition.x, qPosition.z)
+					end
 				end
 			end
 		end
-		
-		if menu.comboOptions.comboW and GetDistance(target) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
-			CastSpell(_W, wPosition.x, wPosition.z)
+
+		if menu.comboOptions.comboW then
+			local wPosition = predictionW:GetPrediction(target)
+			
+			if GetDistance(target) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
+				CastSpell(_W, wPosition.x, wPosition.z)
+			end
 		end
 		
-		if menu.comboOptions.comboR and GetDistance(target) < skillR.range and aoeRPosition ~= nil and myHero:CanUseSpell(_R) == READY then
+		if menu.comboOptions.comboR then
 			local aoeRPosition = GetAoESpellPosition(skillR.width, target, skillR.delay)
-			CastSpell(_R, aoeRPosition.x, rPosition.z)
+			
+			if GetDistance(target) < skillR.range and aoeRPosition ~= nil and myHero:CanUseSpell(_R) then
+				CastSpell(_R, aoeRPosition.x, rPosition.z)
+			end
 		end
 	end
 end
 
 function harass()
 	if target ~= nil then
-		if menu.harassOptions.harassQ and GetDistance(target) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and checkManaHarass() then
-			if VIP_USER then
-				if not qCollision:GetMinionCollision(myHero, qPosition) then
-					CastSpell(_Q, qPosition.x, qPosition.z)
-				end
-			else
-				if not GetMinionCollision(myHero, target, skillQ.width) then
-					CastSpell(_Q, qPosition.x, qPosition.z)
-				end			
-			end
-		end
-		
-		if menu.harassOptions.harassW and GetDistance(target) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
-			if checkManaHarass() then
-				CastSpell(_W, wPosition.x, wPosition.z)
-			end
-		end
-	end
-end
-
-function farm()
-	if menu.scriptFarm and checkManaFarm() then
-		for i, minion in pairs(enemyMinions.objects) do
-			local adDamage = getDmg("AD", minion, myHero)
-			local qDamage = getDmg("Q", minion, myHero) + adDamage
-
-			if not minion.dead and GetDistance(minion) <= skillQ.range and qDamage > minion.health and myHero:CanUseSpell(_Q) == READY then
-				if VIP_USER then
-					if not qCollision:GetMinionCollision(myHero, minion) then
-						CastSpell(_Q, minion.x, minion.z)
-					end
-				else
-					if not GetMinionCollision(myHero, minion, skillQ.width) then
-						CastSpell(_Q, minion.x, minion.z)
-					end
-				end
-			end
-		end
-	end
-end
-
-function finisher()
-	if target ~= nil then
-		local adDamage = getDmg("AD", target, myHero)
-		local qDamage = getDmg("Q", target, myHero) + adDamage
-		local wDamage = getDmg("W", target, myHero)
-		local rDamage = getDmg("R", target, myHero)
-
-		if menu.finisherOptions.finishQ then
-			if qDamage >= target.health and GetDistance(target) < skillQ.range and not target.dead and target.visible and qPosition ~= nil then
+		if menu.harassOptions.harassQ then
+			local qPosition = predictionQ:GetPrediction(target)
+			
+			if GetDistance(target) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) and checkManaHarass() then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_Q, qPosition.x, qPosition.z)
@@ -182,15 +143,87 @@ function finisher()
 			end
 		end
 		
-		if menu.finisherOptions.finishW then
-			local wDamage = getDmg("W", target, myHero) + myHero.ap
-			if wDamage >= target.health and GetDistance(target) <= skillW.range and not target.dead and target.visible and wPosition ~= nil and myHero:CanUseSpell(_W) == READY then
-				CastSpell(_W, wPosition.x, wPosition.z)
+		if menu.harassOptions.harassW then
+			local wPosition = predictionW:GetPrediction(target)
+
+			if GetDistance(target) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
+				if checkManaHarass() then
+					CastSpell(_W, wPosition.x, wPosition.z)
+				end
 			end
 		end
+	end
+end
+
+function farm()
+	if menu.scriptFarm and menu.farmingOptions.farmQ and checkManaFarm() then
+		for i, minion in pairs(enemyMinions.objects) do
+			if minion ~= nil then
+				local adDamage = getDmg("AD", minion, myHero)
+				local qDamage = getDmg("Q", minion, myHero) + adDamage
+
+				if not minion.dead and GetDistance(minion) < skillQ.range and qDamage > minion.health and myHero:CanUseSpell(_Q) then
+					if VIP_USER then
+						if not qCollision:GetMinionCollision(myHero, minion) then
+							CastSpell(_Q, minion.x, minion.z)
+						end
+					else
+						if not GetMinionCollision(myHero, minion, skillQ.width) then
+							CastSpell(_Q, minion.x, minion.z)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function finisher()
+	if menu.finisherOptions.finishQ then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			if enemy ~= nil then
+				local adDamage = getDmg("AD", enemy, myHero)
+				local qDamage = getDmg("Q", enemy, myHero) + adDamage
+				local qPosition = predictionQ:GetPrediction(enemy)
+
+				if qDamage > enemy.health and GetDistance(qPosition) < skillQ.range and not enemy.dead and enemy.visible and qPosition ~= nil then
+					if VIP_USER then
+						if not qCollision:GetMinionCollision(myHero, qPosition) then
+							CastSpell(_Q, qPosition.x, qPosition.z)
+						end
+					else
+						if not GetMinionCollision(myHero, enemy, skillQ.width) then
+							CastSpell(_Q, qPosition.x, qPosition.z)
+						end			
+					end
+				end
+			end
+		end
+	end
+
+	if menu.finisherOptions.finishW then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			if enemy ~= nil then 
+				local wPosition = predictionW:GetPrediction(enemy)
+				local wDamage = getDmg("W", enemy, myHero) + myHero.ap
+					
+				if wDamage >= enemy.health and GetDistance(wPosition) <= skillW.range and not enemy.dead and enemy.visible and wPosition ~= nil and myHero:CanUseSpell(_W) then
+					CastSpell(_W, wPosition.x, wPosition.z)
+				end
+			end
+		end
+	end
 		
-		if menu.finisherOptions.finishR and rKillable == true and rPosition ~= nil and myHero:CanUseSpell(_R) == READY then
-			CastSpell(_R, rPosition.x, rPosition.z)
+	if menu.finisherOptions.finishR then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			if enemy ~= nil then
+				local rDamage = getDmg("R", enemy, myHero)
+				local rPosition = predictionR:GetPrediction(enemy)
+
+				if rKillable == true then
+					CastSpell(_R, rPosition.x, rPosition.z)
+				end
+			end
 		end
 	end
 end
@@ -239,7 +272,6 @@ function menu()
 	menu.drawOptions:addParam("drawQ", "Draw "..skillQ.spellName.. " range", SCRIPT_PARAM_ONOFF, false)
 	menu.drawOptions:addParam("drawW", "Draw "..skillW.spellName.. " range", SCRIPT_PARAM_ONOFF, false)
 	menu.drawOptions:addParam("drawR", "Draw "..skillR.spellName.. " range", SCRIPT_PARAM_ONOFF, false)
-	menu.drawOptions:addParam("finisherR", "Print killable target with "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
 	-- Script combo and harass bottoms
 	menu:addParam("scriptCombo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 	menu:addParam("scriptHarass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
