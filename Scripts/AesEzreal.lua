@@ -220,7 +220,7 @@ function finisher()
 				local rDamage = getDmg("R", enemy, myHero)
 				local rPosition = predictionR:GetPrediction(enemy)
 
-				if rKillable == true then
+				if rKillable == true and rPosition ~= nil then
 					CastSpell(_R, rPosition.x, rPosition.z)
 				end
 			end
