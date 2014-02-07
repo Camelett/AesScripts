@@ -6,7 +6,6 @@ require "AoE_Skillshot_Position"
 if VIP_USER then
 	require "Prodiction"
 	require "Collision"
-	prodiction = ProdictManager.GetInstance()
 end
 
 -- Variables
@@ -17,27 +16,23 @@ local version = 1.4
 
 -- Spell information
 local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2.0, delay = 250, width = 60}
-local skillW = {spellName = "Essence Flux", range = 1050, speed = 1.6, delay = 250}
+local skillW = {spellName = "Essence Flux", range = 1050, speed = 1.6, delay = 250, width = 80}
 local skillR = {spellName = "Trueshot Barrage", range = 2000, speed = 2.0, delay = 1000, width = 160}
 
--- Prediction
-if VIP_USER then
-	predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
-	predictionW = prodiction:AddProdictionObject(_W, skillW.range, skillW.speed * 1000, skillW.delay / 1000)
-	predictionR = prodiction:AddProdictionObject(_R, skillR.range, skillR.speed * 1000, skillR.delay / 1000)
-else
-	predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
-	predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
-	predictionR = TargetPrediction(skillR.range, skillR.speed, skillR.delay)
-end
-
--- Spell collision
-if VIP_USER then
-	qCollision = Collision(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
-	rCollision = Collision(skillR.range, skillR.speed, skillR.delay, skillR.width)
-end
-
 function OnLoad()
+	if VIP_USER then
+		prodiction = ProdictManager.GetInstance()
+		predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
+		predictionW = prodiction:AddProdictionObject(_W, skillW.range, skillW.speed * 1000, skillW.delay / 1000, skillW.width)
+		predictionR = prodiction:AddProdictionObject(_R, skillR.range, skillR.speed * 1000, skillR.delay / 1000, skillR.width)
+		qCollision = Collision(skillQ.range, skillQ.speed, skillQ.delay / 1000, skillQ.width)
+		rCollision = Collision(skillR.range, skillR.speed, skillR.delay / 1000, skillR.width)
+	else
+		predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
+		predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
+		predictionR = TargetPrediction(skillR.range, skillR.speed, skillR.delay)
+	end
+	
 	PrintChat("AesEzreal loaded! Version: "..version)
 	menu()
 	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, true)
@@ -94,7 +89,7 @@ function combo()
 		if menu.comboOptions.comboQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
-			if GetDistance(target) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) then
+			if GetDistance(qPosition) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_Q, qPosition.x, qPosition.z)
@@ -110,7 +105,7 @@ function combo()
 		if menu.comboOptions.comboW then
 			local wPosition = predictionW:GetPrediction(target)
 			
-			if GetDistance(target) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
+			if GetDistance(qPosition) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
 				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
@@ -118,8 +113,8 @@ function combo()
 		if menu.comboOptions.comboR then
 			local aoeRPosition = GetAoESpellPosition(skillR.width, target, skillR.delay)
 			
-			if GetDistance(target) < skillR.range and aoeRPosition ~= nil and myHero:CanUseSpell(_R) then
-				CastSpell(_R, aoeRPosition.x, rPosition.z)
+			if GetDistance(qPosition) < skillR.range and aoeRPosition ~= nil and myHero:CanUseSpell(_R) then
+				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
 			end
 		end
 	end
@@ -130,7 +125,7 @@ function harass()
 		if menu.harassOptions.harassQ then
 			local qPosition = predictionQ:GetPrediction(target)
 			
-			if GetDistance(target) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) and checkManaHarass() then
+			if GetDistance(qPosition) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) and checkManaHarass() then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_Q, qPosition.x, qPosition.z)
@@ -146,7 +141,7 @@ function harass()
 		if menu.harassOptions.harassW then
 			local wPosition = predictionW:GetPrediction(target)
 
-			if GetDistance(target) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
+			if GetDistance(wPosition) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
 				if checkManaHarass() then
 					CastSpell(_W, wPosition.x, wPosition.z)
 				end
