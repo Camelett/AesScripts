@@ -10,7 +10,6 @@ end
 local target = nil
 local version = 1.4
 local rKillable = false
-if VIP_USER then prodiction = ProdictManager.GetInstance() end
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 625, width = 90}
@@ -18,27 +17,23 @@ local skillW = {spellName = "Yordle Snap Trap", range = 800, speed = 1.45, delay
 local skillE = {spellName = "90 Caliber Net", range = 950, speed = 2.0, delay = 150, width = 80}
 local skillR = {spellName = "Ace in the Hole", range = 2000}
 
--- Prediction
-if VIP_USER then
-	predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
-	predictionW = prodiction:AddProdictionObject(_W, skillW.range, skillW.speed * 1000, skillW.delay / 1000)
-	predictionE = prodiction:AddProdictionObject(_E, skillE.range, skillE.speed * 1000, skillE.delay / 1000, skillE.width)
-else
-	predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay)
-	predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
-	predictionE = TargetPrediction(skillE.range, skillE.speed, skillE.delay, skillE.width)
-end
-
--- Collision
-if VIP_USER then
- 	eCollision = Collision(skillE.range, skillE.speed, skillE.delay, skillE.width)
-end
-
 function OnLoad()
-	print("AesCaitlyn version: ".. version .. " loaded!")
+	if VIP_USER then
+		prodiction = ProdictManager.GetInstance()
+		predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
+		predictionW = prodiction:AddProdictionObject(_W, skillW.range, skillW.speed * 1000, skillW.delay / 1000)
+		predictionE = prodiction:AddProdictionObject(_E, skillE.range, skillE.speed * 1000, skillE.delay / 1000, skillE.width)
+		eCollision = Collision(skillE.range, skillE.speed, skillE.delay / 1000, skillE.width)
+	else
+		predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay)
+		predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
+		predictionE = TargetPrediction(skillE.range, skillE.speed, skillE.delay, skillE.width)
+	end
+
 	skillR.range = getRRange()
 	menu()
 	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, false)
+	print("AesCaitlyn version: ".. version .. " loaded!")
 end
 
 function OnTick()
