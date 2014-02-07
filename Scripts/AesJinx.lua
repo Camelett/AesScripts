@@ -9,37 +9,31 @@ require "AoE_Skillshot_Position"
 
 --Variables
 local target = nil
-local version = 0.3
+local version = 0.2
 local rocket = false
-
-if VIP_USER then prodiction = ProdictManager.GetInstance() end
 
 --Skill table
 local skillsTable = {
 	skillQ = {name = "Switcheroo!", minigunRange = 525, fishRange = 525},
-	skillW = {name = "Zap!", range = 1450, speed = 3.3 , delay = 600, width = 100},
-	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 500},
-	skillR = {name = "Super Mega Death Rocket!", range = 2000, speed = 2.2, delay = 600, radius = 120}
+	skillW = {name = "Zap!", range = 1500, speed = 3.3 , delay = 600, width = 60},
+	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 375},
+	skillR = {name = "Super Mega Death Rocket!", range = 2000, speed = 1.2, delay = 600, width = 120, radius = 450}
 }
 
---Prediction
-if VIP_USER then
-	predictionW = prodiction:AddProdictionObject(_W, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000)
-	predictionE = prodiction:AddProdictionObject(_E, skillsTable.skillE.range, skillsTable.skillE.speed * 1000, skillsTable.skillE.delay / 1000, skillsTable.skillW.width)
-	predictionR = prodiction:AddProdictionObject(_R, skillsTable.skillR.range, skillsTable.skillR.speed * 1000, skillsTable.skillR.delay / 1000)
-else
-	predictionW = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
-	predictionE = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed, skillsTable.skillE.delay)
-	predictionR = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay)
-end
-
---Collision
-if VIP_USER then
-	wCollision = Collision(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
-end
-
 function OnLoad()
-	ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
+	if VIP_USER then
+		prodiction = ProdictManager.GetInstance()
+		predictionW = prodiction:AddProdictionObject(_W, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
+		predictionE = prodiction:AddProdictionObject(_E, skillsTable.skillE.range, skillsTable.skillE.speed * 1000, skillsTable.skillE.delay / 1000)
+		predictionR = prodiction:AddProdictionObject(_R, skillsTable.skillR.range, skillsTable.skillR.speed * 1000, skillsTable.skillR.delay / 1000, skillsTable.skillR.width)
+		wCollision = Collision(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
+	else
+		predictionW = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
+		predictionE = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed, skillsTable.skillE.delay)
+		predictionR = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay, skillsTable.skillR.width)
+	end
+
+	ts = TargetSelector(TARGET_LOW_HP_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
 
 	menu()
 	print("AesJinx version: "..version.." loaded!")
@@ -52,7 +46,7 @@ function OnTick()
 	getGun()
 
 	target = ts.target
-
+	
 	if config.basicSubMenu.combo then
 		combo()
 		rocketLauncher()
@@ -129,17 +123,19 @@ end
 function finisher()
 	if config.aggressiveSubMenu.finisherSubMenu.finishW then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local wPosition = predictionW:GetPrediction(enemy)
-			local wDamage = getDmg("W", enemy, myHero)
+			if enemy ~= nil then
+				local wPosition = predictionW:GetPrediction(enemy)
+				local wDamage = getDmg("W", enemy, myHero)
 
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
-				if VIP_USER then
-					if not wCollision:GetMinionCollision(myHero, wPosition) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				else
-					if not GetMinionCollision(myHero, enemy, skillsTable.skillW.width) then
-						CastSpell(_W, wPosition.x, wPosition.z)
+				if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
+					if VIP_USER then
+						if not wCollision:GetMinionCollision(myHero, wPosition) then
+							CastSpell(_W, wPosition.x, wPosition.z)
+						end
+					else
+						if not GetMinionCollision(myHero, enemy, skillsTable.skillW.width) then
+							CastSpell(_W, wPosition.x, wPosition.z)
+						end
 					end
 				end
 			end
@@ -148,11 +144,13 @@ function finisher()
 
 	if config.aggressiveSubMenu.finisherSubMenu.finishR then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local rPosition = predictionR:GetPrediction(enemy)
-			local rDamage = getDmg("R", enemy, myHero)
+			if enemy ~= nil then
+				local rPosition = predictionR:GetPrediction(enemy)
+				local rDamage = getDmg("R", enemy, myHero)
 
-			if rPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
-				CastSpell(_R, rPosition.x, rPosition.z)
+				if rPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
+					CastSpell(_R, rPosition.x, rPosition.z)
+				end
 			end
 		end
 	end
@@ -161,10 +159,12 @@ end
 function chompers()
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local ePosition = predictionE:GetPrediction(enemy)
-			
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(ePosition) < skillsTable.skillE.range and not enemy.canMove then
-				CastSpell(_E, enemy.x, enemy.z)
+			if enemy ~= nil then
+				local ePosition = predictionE:GetPrediction(enemy)
+				
+				if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(ePosition) < skillsTable.skillE.range and not enemy.canMove then
+					CastSpell(_E, enemy.x, enemy.z)
+				end
 			end
 		end
 	end
