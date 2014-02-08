@@ -8,8 +8,7 @@ end
 
 -- Variables
 local target = nil
-local version = 1.4
-local rKillable = false
+local version = 1.5
 
 -- Skills information
 local skillQ = {spellName = "Piltover Peacemaker", range = 1300, speed = 2.2, delay = 625, width = 90}
@@ -42,47 +41,48 @@ function OnTick()
 
 	target = targetSelector.target
 
-	if menu.combo then combo() end
-	if menu.harass then harass() end
-	if menu.trappingSubMenu.autoW then trap() end
-	if menu.miscSubMenu.reverseE then reversedE() end
-	if menu.finisherSubMenu.finishQ or menu.finisherSubMenu.finishE or menu.finisherSubMenu.finishR then finisher() end
+	if config.basicSubMenu.combo then combo() end
+	if config.basicSubMenu.harass then harass() end
+	if config.basicSubMenu.reverseE then reversedE() end
+	if config.defensiveSubMenu.trappingSubMenu.autoW then trap() end
+	if config.aggressiveSubMenu.finisherSubMenu.finishQ or config.aggressiveSubMenu.finisherSubMenu.finishE or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 end
 
 function OnDraw()
-	if menu.drawSubMenu.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFFFFFF) end
-	if menu.drawSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFFFFFF) end
-	if menu.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillE.range, 0xFFFFFF) end
-	if menu.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawSubMenu.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawSubMenu.drawE then DrawCircle(myHero.x, myHero.y, myHero.z, skillE.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFFFFFF) end
 	for i, enemy in pairs(GetEnemyHeroes()) do	
 		local rDamage = getDmg("R", enemy, myHero)
+		local rRatio = rDamage - enemy.health
 
-			if GetDistance(enemy) < skillR.range and rDamage > enemy.health and not enemy.dead and enemy.visible then
-				rKillable = true
-				PrintFloatText(enemy, 0, "Press R to do tons of damage")
+			if GetDistance(enemy) < skillR.range and rDamage > enemy.health and rRatio >= 50 and not enemy.dead and enemy.visible and myHero:CanUseSpell(_R) == READY then
+				PrintFloatText(enemy, 0, "Press R to SNIPE!!")
 				DrawCircle(enemy.x, enemy.y, enemy.z, 150, 0xFF0000)
 				DrawCircle(enemy.x, enemy.y, enemy.z, 200, 0xFF0000)
 				DrawCircle(enemy.x, enemy.y, enemy.z, 250, 0xFF0000)
-			else
-				rKillable = false
+				if config.aggressiveSubMenu.finisherSubMenu.finishR then
+					CastSpell(_R, enemy)
+				end
 			end
 	end
 end
 
 function combo()
 	if target ~= nil then
-		if menu.comboSubMenu.comboQ then
+		if config.aggressiveSubMenu.comboSubMenu.comboQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
-			if qPosition ~= nil and myHero:CanUseSpell(_Q) and menu.comboSubMenu.comboRangeQ > GetDistance(qPosition) then
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and config.aggressiveSubMenu.comboSubMenu.comboRangeQ > GetDistance(qPosition) then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
 
-		if menu.comboSubMenu.comboE then
+		if config.aggressiveSubMenu.comboSubMenu.comboE then
 			local ePosition = predictionE:GetPrediction(target)
 
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and menu.comboSubMenu.comboRangeE > GetDistance(ePosition) then
+			if ePosition ~= nil and myHero:CanUseSpell(_E) == READY and config.aggressiveSubMenu.comboSubMenu.comboRangeE > GetDistance(ePosition) then
 				if VIP_USER then
 					if not GetMinionCollision(myHero, target, skillE.width) then
 						CastSpell(_E, ePosition.x, ePosition.z)
@@ -95,10 +95,10 @@ function combo()
 			end
 		end
 
-		if menu.comboSubMenu.comboW then
+		if config.aggressiveSubMenu.comboSubMenu.comboW then
 			local wPosition = predictionW:GetPrediction(target)
 
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and menu.comboSubMenu.comboRangeW > GetDistance(wPosition) then
+			if wPosition ~= nil and myHero:CanUseSpell(_W) == READY and config.aggressiveSubMenu.comboSubMenu.comboRangeW > GetDistance(wPosition) then
 				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
@@ -107,18 +107,18 @@ end
 
 function harass()
 	if target ~= nil then
-		if menu.harassSubMenu.harassQ then
+		if config.aggressiveSubMenu.harassSubMenu.harassQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
-			if qPosition ~= nil and myHero:CanUseSpell(_Q) and menu.harassSubMenu.harassRangeQ > GetDistance(qPosition) and checkManaHarass() then
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and config.aggressiveSubMenu.harassSubMenu.harassRangeQ > GetDistance(qPosition) and checkManaHarass() then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
 
-		if menu.harassSubMenu.harassE then
+		if config.aggressiveSubMenu.harassSubMenu.harassE then
 			local ePosition = predictionE:GetPrediction(target)
 
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and menu.harassSubMenu.harassRangeE > GetDistance(ePosition) and checkManaHarass() then
+			if ePosition ~= nil and myHero:CanUseSpell(_E) == READY and config.aggressiveSubMenu.harassSubMenu.harassRangeE > GetDistance(ePosition) and checkManaHarass() then
 				if VIP_USER then
 					if not eCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_E, ePosition.x, ePosition.z)
@@ -134,7 +134,7 @@ function harass()
 end
 
 function finisher()
-	if menu.finisherSubMenu.finishQ then
+	if config.aggressiveSubMenu.finisherSubMenu.finishQ then
 		for i, enemy in pairs(GetEnemyHeroes()) do
 			local qPosition = predictionQ:GetPrediction(enemy)
 			local qDamage = getDmg("Q", enemy, myHero)
@@ -145,11 +145,12 @@ function finisher()
 		end
 	end
 
-	if menu.finisherSubMenu.finishE then
+	if config.aggressiveSubMenu.finisherSubMenu.finishE then
 		for i, enemy in pairs(GetEnemyHeroes()) do
+			local ePosition = predictionE:GetPrediction(enemy)
 			local eDamage = getDmg("E", enemy, myHero)
 
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and skillE.range > GetDistance(eDamage) and eDamage > enemy.health and not enemy.dead and enemy.visible then
+			if ePosition ~= nil and myHero:CanUseSpell(_E) == READY and skillE.range > GetDistance(ePosition) and eDamage > enemy.health and not enemy.dead and enemy.visible then
 				if VIP_USER then
 					if not eCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_E, ePosition.x, ePosition.z)
@@ -162,24 +163,12 @@ function finisher()
 			end
 		end
 	end
-
-	if menu.finisherSubMenu.finishR then
-		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy~= nil then
-				local rDamage = getDmg("R", enemy, myHero)
-
-				if rKillable == true then
-					CastSpell(_R, enemy)
-				end
-			end
-		end
-	end
 end
 
 function trap()
-	if menu.trappingSubMenu.autoW then
+	if config.defensiveSubMenu.trappingSubMenu.autoW then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			if GetDistance(enemy) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) == READY and not enemy.canMove then
+			if GetDistance(enemy) < skillW.range and myHero:CanUseSpell(_W) == READY and not enemy.canMove then
 				CastSpell(_W, enemy.x, enemy.z)
 			end
 		end
@@ -187,7 +176,7 @@ function trap()
 end
 
 function reversedE()
-	if menu.miscSubMenu.reverseE and myHero:CanUseSpell(_E) == READY then
+	if myHero:CanUseSpell(_E) == READY then
 		-- credits to jbman for calculations
 		local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
 		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -198,7 +187,7 @@ function reversedE()
 end
 
 function checkManaHarass()
-	if myHero.mana >= myHero.maxMana * (menu.managementOptions.manaProcentHarass / 100) then
+	if myHero.mana >= myHero.maxMana * (config.otherSubMenu.managementOptions.manaProcentHarass / 100) then
 		return true
 	else
 		return false
@@ -216,43 +205,51 @@ function getRRange()
 end
 
 function menu()
-	menu = scriptConfig("AesCaitlyn", "aescaitlyn")
-	-- Combo submenu
-	menu:addSubMenu("Combo options", "comboSubMenu")
-	menu.comboSubMenu:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.comboSubMenu:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.comboSubMenu:addParam("comboE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
-	menu.comboSubMenu:addParam("comboRangeW", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 800, 0, skillW.range, 0)
-	menu.comboSubMenu:addParam("comboRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
-	-- Harass submenu
-	menu:addSubMenu("Harass options", "harassSubMenu")
-	menu.harassSubMenu:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.harassSubMenu:addParam("harassE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.harassSubMenu:addParam("harassRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
-	menu.harassSubMenu:addParam("harassRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
-	-- Finisher submenu
-	menu:addSubMenu("Finisher options", "finisherSubMenu")
-	menu.finisherSubMenu:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.finisherSubMenu:addParam("finishE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.finisherSubMenu:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 82)
-	-- Traps submenu
-	menu:addSubMenu("Trapping options", "trappingSubMenu")
-	menu.trappingSubMenu:addParam("autoW", "Place "..skillW.spellName.." under stunned target", SCRIPT_PARAM_ONOFF, false)
-	-- Misc submenu
-	menu:addSubMenu("Misc options", "miscSubMenu")
-	menu.miscSubMenu:addParam("reverseE", "Use reversed "..skillE.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 69)
-	-- Draw submenu
-	menu:addSubMenu("Draw options", "drawSubMenu")
-	menu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
-	menu.drawSubMenu:addParam("drawW", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
-	menu.drawSubMenu:addParam("drawE", "Draw "..skillE.spellName.." range", SCRIPT_PARAM_ONOFF, false)
-	menu.drawSubMenu:addParam("drawR", "Draw "..skillR.spellName.." range", SCRIPT_PARAM_ONOFF, false)
-	-- Management submenu
-	menu:addSubMenu("Management options", "managementOptions")
-	menu.managementOptions:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
-	-- Script bottoms
-	menu:addParam("combo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-	menu:addParam("harass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
-	menu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
+	config = scriptConfig("AesCaitlyn: Main menu", "aescaitlyn")
+	-- Basic submenu
+	config:addSubMenu("AesCaitlyn: Basic settings", "basicSubMenu")
+	config.basicSubMenu:addParam("combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+	config.basicSubMenu:addParam("harass", "Harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
+	config.basicSubMenu:addParam("reverseE", "Use reversed "..skillE.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 69)
+	config.basicSubMenu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
+
+	-- Aggressive submenu
+	config:addSubMenu("AesCaitlyn: Aggressive settings", "aggressiveSubMenu")
+
+	config.aggressiveSubMenu:addSubMenu("Combo settings", "comboSubMenu")
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeW", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 800, 0, skillW.range, 0)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
+
+	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
+
+	config.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSubMenu")
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finishE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 82)
+
+	-- Defensive submenu
+	config:addSubMenu("AesCaitlyn: Defensive settings", "defensiveSubMenu")
+
+	config.defensiveSubMenu:addSubMenu("Trapping settings", "trappingSubMenu")
+	config.defensiveSubMenu.trappingSubMenu:addParam("autoW", "Place "..skillW.spellName.." under stunned target", SCRIPT_PARAM_ONOFF, false)
+
+	-- Other submenu
+	config:addSubMenu("AesCaitlyn: Other settings", "otherSubMenu")
+
+	config.otherSubMenu:addSubMenu("Management settingss", "managementOptions")
+	config.otherSubMenu.managementOptions:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
+
+	config.otherSubMenu:addSubMenu("Drawing settings", "drawSubMenu")
+	config.otherSubMenu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawSubMenu:addParam("drawW", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawSubMenu:addParam("drawE", "Draw "..skillE.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawSubMenu:addParam("drawR", "Draw "..skillR.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 end
