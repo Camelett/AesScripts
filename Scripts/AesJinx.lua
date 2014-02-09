@@ -15,7 +15,7 @@ local rocket = false
 --Skill table
 local skillsTable = {
 	skillQ = {name = "Switcheroo!", minigunRange = 525, fishRange = 525},
-	skillW = {name = "Zap!", range = 1500, speed = 3.3 , delay = 600, width = 60},
+	skillW = {name = "Zap!", range = 1500, speed = 3.3, delay = 600, width = 60},
 	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 375},
 	skillR = {name = "Super Mega Death Rocket!", range = 2000, speed = 1.2, delay = 600, width = 120, radius = 450}
 }
@@ -49,7 +49,9 @@ function OnTick()
 	
 	if config.basicSubMenu.combo then combo() end
 
-	if config.basicSubMenu.combo and config.aggressiveSubMenu.comboSubMenu.comboQ then rocketLauncher() end
+	if config.basicSubMenu.combo and config.aggressiveSubMenu.comboSubMenu.comboQ then 
+		rocketLauncher() 
+	end
 	if config.miscSubMenu.autoQ or config.miscSubMenu.outofrangeQ then rocketLauncher() end
 	if config.basicSubMenu.harass then harass() end
 	if config.aggressiveSubMenu.finisherSubMenu.finishW or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
@@ -171,7 +173,7 @@ function rocketLauncher()
 		end
 	end
 
-	if target == nil and rocket == true and config.miscSubMenu.outofrangeQ then
+	if target == nil and rocket == true then
 		CastSpell(_Q)
 	end
 end
@@ -202,17 +204,17 @@ end
 
 function getQRange()
 	if myHero:GetSpellData(_Q).level == 1 then
-		skillsTable.skillW.fishRange = 525 + 75
+		skillsTable.skillQ.fishRange = 525 + 75
 	elseif myHero:GetSpellData(_Q).level == 2 then
-		skillsTable.skillW.fishRange = 525 + 100
+		skillsTable.skillQ.fishRange = 525 + 100
 	elseif myHero:GetSpellData(_Q).level == 3 then
-		skillsTable.skillW.fishRange = 525 + 125
+		skillsTable.skillQ.fishRange = 525 + 125
 	elseif myHero:GetSpellData(_Q).level == 4 then
-		skillsTable.skillW.fishRange = 525 + 150
+		skillsTable.skillQ.fishRange = 525 + 150
 	elseif myHero:GetSpellData(_Q).level == 5 then
-		skillsTable.skillW.fishRange = 525 + 175
+		skillsTable.skillQ.fishRange = 525 + 175
 	else
-		skillsTable.skillW.fishRange = 525
+		skillsTable.skillQ.fishRange = 525
 	end
 end
 
