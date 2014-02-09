@@ -9,7 +9,7 @@ require "AoE_Skillshot_Position"
 
 --Variables
 local target = nil
-local version = 0.2
+local version = 0.3
 local rocket = false
 
 --Skill table
@@ -47,12 +47,10 @@ function OnTick()
 
 	target = ts.target
 	
-	if config.basicSubMenu.combo then
-		combo()
-		rocketLauncher()
-	end
+	if config.basicSubMenu.combo then combo() end
 
-	if config.miscSubMenu.autoQ then rocketLauncher() end
+	if config.basicSubMenu.combo and config.aggressiveSubMenu.comboSubMenu.comboQ then rocketLauncher() end
+	if config.miscSubMenu.autoQ or config.miscSubMenu.outofrangeQ then rocketLauncher() end
 	if config.basicSubMenu.harass then harass() end
 	if config.aggressiveSubMenu.finisherSubMenu.finishW or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then chompers() end
@@ -123,19 +121,17 @@ end
 function finisher()
 	if config.aggressiveSubMenu.finisherSubMenu.finishW then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy ~= nil then
-				local wPosition = predictionW:GetPrediction(enemy)
-				local wDamage = getDmg("W", enemy, myHero)
+			local wPosition = predictionW:GetPrediction(enemy)
+			local wDamage = getDmg("W", enemy, myHero)
 
-				if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
-					if VIP_USER then
-						if not wCollision:GetMinionCollision(myHero, wPosition) then
-							CastSpell(_W, wPosition.x, wPosition.z)
-						end
-					else
-						if not GetMinionCollision(myHero, enemy, skillsTable.skillW.width) then
-							CastSpell(_W, wPosition.x, wPosition.z)
-						end
+			if wPosition ~= nil and myHero:CanUseSpell(_W) and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
+				if VIP_USER then
+					if not wCollision:GetMinionCollision(myHero, wPosition) then
+						CastSpell(_W, wPosition.x, wPosition.z)
+					end
+				else
+					if not GetMinionCollision(myHero, enemy, skillsTable.skillW.width) then
+						CastSpell(_W, wPosition.x, wPosition.z)
 					end
 				end
 			end
@@ -144,13 +140,11 @@ function finisher()
 
 	if config.aggressiveSubMenu.finisherSubMenu.finishR then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy ~= nil then
-				local rPosition = predictionR:GetPrediction(enemy)
-				local rDamage = getDmg("R", enemy, myHero)
+			local rPosition = predictionR:GetPrediction(enemy)
+			local rDamage = getDmg("R", enemy, myHero)
 
-				if rPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
-					CastSpell(_R, rPosition.x, rPosition.z)
-				end
+			if rPosition ~= nil and myHero:CanUseSpell(_R) and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
+				CastSpell(_R, rPosition.x, rPosition.z)
 			end
 		end
 	end
@@ -158,13 +152,9 @@ end
 
 function chompers()
 	if config.defensiveSubMenu.chompersSubMenu.stunChompers then
-		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy ~= nil then
-				local ePosition = predictionE:GetPrediction(enemy)
-				
-				if ePosition ~= nil and myHero:CanUseSpell(_E) and GetDistance(ePosition) < skillsTable.skillE.range and not enemy.canMove then
-					CastSpell(_E, enemy.x, enemy.z)
-				end
+		for i, enemy in pairs(GetEnemyHeroes()) do				
+			if myHero:CanUseSpell(_E) and GetDistance(enemy) < skillsTable.skillE.range and not enemy.canMove then
+				CastSpell(_E, enemy.x, enemy.z)
 			end
 		end
 	end
@@ -212,17 +202,17 @@ end
 
 function getQRange()
 	if myHero:GetSpellData(_Q).level == 1 then
-		skillsTable.skillQ.fishRange = 525 + 75
+		skillsTable.skillW.fishRange = 525 + 75
 	elseif myHero:GetSpellData(_Q).level == 2 then
-		skillsTable.skillQ.fishRange = 525 + 100
+		skillsTable.skillW.fishRange = 525 + 100
 	elseif myHero:GetSpellData(_Q).level == 3 then
-		skillsTable.skillQ.fishRange = 525 + 125
+		skillsTable.skillW.fishRange = 525 + 125
 	elseif myHero:GetSpellData(_Q).level == 4 then
-		skillsTable.skillQ.fishRange = 525 + 150
+		skillsTable.skillW.fishRange = 525 + 150
 	elseif myHero:GetSpellData(_Q).level == 5 then
-		skillsTable.skillQ.fishRange = 525 + 175
+		skillsTable.skillW.fishRange = 525 + 175
 	else
-		skillsTable.skillQ.fishRange = 525
+		skillsTable.skillW.fishRange = 525
 	end
 end
 
@@ -255,7 +245,7 @@ function menu()
 
 	-- Misc submenu
 	config:addSubMenu("AesJinx: Misc settings", "miscSubMenu")
-	config.miscSubMenu:addParam("autoQ", "Automatically use "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
+	config.miscSubMenu:addParam("autoQ", "Automatically use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.miscSubMenu:addParam("outofrangeQ", "Change to minigun, when there is no target", SCRIPT_PARAM_ONOFF, false)
 
 	-- Management submenu
