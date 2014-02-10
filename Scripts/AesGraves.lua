@@ -1,123 +1,172 @@
---[[
-	AesGraves Version: 1.0 By Bestplox
-]]--
-
 if myHero.charName ~= "Graves" then return end
 
---Prediction
-local QPredic = TargetPrediction(950, 2.0 ,266)
-local RPredic = TargetPrediction(1000, 2.1 ,219)
+if VIP_USER then require "Prodiction" end
+require "AoE_Skillshot_Position"
 
--- Misc
-local ignite = nil
-local IREADY = false
-local version = 1.0
+local target = nil
+local version = 0.1
 
+local skillsTable = {
+	skillW = {name = "Buckshot", range = 950, speed = .902, delay = 250},
+	skillW = {name = "Smoke Screen", range = 950, speed = 1.650, delay = 250},
+	skillE = {name = "Quickdraw"},
+	skillR = {name = "Collateral Damage", range = 1000, speed = 1.4, delay = 250, radius = 210}
+}
 
 function OnLoad()
-	PrintChat(" >> AesGraves Loaded!")
-	Config = scriptConfig("Graves combo", "ComboConfig")
-	Config:addParam("combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-	Config:addParam("harass", "Harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
-	Config:addParam("ult", "Use ultimate", SCRIPT_PARAM_ONKEYDOWN, false, 83)
-	Config:addParam("ultkill", "Ultimate when killable" ,SCRIPT_PARAM_ONOFF, true)
-	Config:addParam("autoignite", "Use ignite", SCRIPT_PARAM_ONOFF, true)
-	Config:addParam("circles", "Draw circles", SCRIPT_PARAM_ONOFF, false)
-	
-	Config:permaShow("combo")
-	Config:permaShow("harass")
-	
-	ts = TargetSelector(TARGET_LOW_HP, 1000, DAMAGE_PHYSICAL)
-	ts.name = "Graves"
-	Config:addTS(ts)
-	
-	if myHero:GetSpellData(SUMMONER_1).name:find("SummonerDot") then 
-		ignite = SUMMONER_1
-    elseif 
-    	myHero:GetSpellData(SUMMONER_2).name:find("SummonerDot") then 
-    	ignite = SUMMONER_2 
-    end
+	if VIP_USER then
+		prodiction = ProdictManager.GetInstance()
+		predictionQ = prodiction:AddProdictionObject(_Q, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000)
+		predictionW = prodiction:AddProdictionObject(_W, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000)
+		predictionR = prodiction:AddProdictionObject(_R, skillsTable.skillR.range, skillsTable.skillR.speed * 1000, skillsTable.skillR.delay / 1000)
+	else
+		predictionQ = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay)
+		predictionW = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay)
+		predictionR = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay)
+	end
+
+	targetSelector = TargetSelector(TARGET_LOW_HP_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
+	menu()
+	print("AesGraves version: "..version.." loaded!")
 end
 
 function OnTick()
-	ts:update()
-	
-	if Config.combo then
-		Combo()
-	end
-	
-	if Config.harass then
-		Harass()
-	end
-	
-	if Config.ult then
-		Ultimate()
-	end
-	
-	if Config.autoignite then
-		Ignite()
-	end
-end
+	targetSelector:update()
 
-function Combo()
-	if Config.combo and ts.target ~= nil then
-		if myHero:CanUseSpell(_W) == READY and GetDistance(ts.target) <= 950 then
-			CastSpell(_W, ts.target.x, ts.target.z)
-		end
-	
-		QPredict = QPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_Q) == READY and QPredict ~= nil and GetDistance(QPredict) <= 950 then
-			CastSpell(_Q, QPredict.x, QPredict.z)
-		end
-		
-		RDmg = (getDmg("R", ts.target, myHero) - 100)
-		RPredict = RPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_R) == READY and Config.ultkill and RDmg >= ts.target.health and RPredict ~= nil and GetDistance(ts.target) <= 1000 then
-			CastSpell(_R, RPredict.x , RPredict.z)
-		end
-	end
-end
+	target = targetSelector.target
 
-function Harass()
-	if Config.harass and ts.target ~= nil then
-		QPredict = QPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_Q) == READY and QPredict ~= nil and GetDistance(QPredict) <= 950 then
-			CastSpell(_Q, QPredict.x, QPredict.z)
-		end
-	end
-end
-
-function Ultimate()
-	if Config.ult and ts.target ~= nil then
-		RPredict = RPredic:GetPrediction(ts.target)
-		if myHero:CanUseSpell(_R) == READY and RPredict ~= nil and GetDistance(ts.target) <= 1000 then
-			CastSpell(_R, RPredict.x , RPredict.z)
-		end	
-	end
-end
-
-function Ignite()
- 	if Config.autoignite then
- 		IREADY = (ignite ~= nil and myHero:CanUseSpell(ignite) == READY)    
-        if IREADY then
-            local ignitedmg = 0    
-            for j = 1, heroManager.iCount, 1 do
-                local enemyhero = heroManager:getHero(j)
-                    if ValidTarget(enemyhero,600) then
-                        ignitedmg = 50 + 20 * myHero.level
-                            if enemyhero.health <= ignitedmg then
-                                CastSpell(ignite, enemyhero)
-                            end
-                    end
-            end
-        end
-    end
+	if config.basicSubMenu.combo then combo() end
+	if config.basicSubMenu.harass then harass() end
+	if config.aggressiveSubMenu.finisherSubMenu.finisherQ or config.aggressiveSubMenu.finisherSubMenu.finisherW or config.aggressiveSubMenu.finisherSubMenu.finisherR then finisher() end
 end
 
 function OnDraw()
-	if Config.circles then
-		if myHero:CanUseSpell(_Q) == READY then
-			DrawCircle(myHero.x, myHero.y, myHero.z, 950, 0xFF0000)
+	if config.otherSubMenu.drawingSubMenu.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawingSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawingSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillR.range, 0xFFFFFF) end
+end
+
+function combo()
+	if target ~= nil then
+		if config.aggressiveSubMenu.comboSubMenu.comboQ then
+			local qPosition = predictionQ:GetPrediction(target)
+
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillW.range then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
+		end
+
+		if config.aggressiveSubMenu.comboSubMenu.comboW then
+			local wPosition = predictionW:GetPrediction(target)
+
+			if wPosition ~= nil and myHero:CanUseSpell(_W) == READY and GetDistance(wPosition) < skillsTable.skillW.range then
+				CastSpell(_W, wPosition.x, wPosition.z)
+			end
+		end
+
+		if config.aggressiveSubMenu.comboSubMenu.comboR then
+			local aoeRPosition = GetAoESpellPosition(skillsTable.skillR.radius, target, skillsTable.skillR.delay)
+
+			if aoeRPosition ~= nil and myHero:CanUseSpell(_R) == READY and GetDistance(aoeRPosition) < skillsTable.skillR.range then
+				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
+			end
 		end
 	end
+end
+
+function harass()
+	if target ~= nil then
+		if config.aggressiveSubMenu.harassSubMenu.harassQ then
+			local qPosition = predictionQ:GetPrediction(target)
+
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillW.range then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
+		end
+
+		if config.aggressiveSubMenu.harassSubMenu.harassW then
+			local wPosition = predictionW:GetPrediction(target)
+
+			if wPosition ~= nil and myHero:CanUseSpell(_W) == READY and GetDistance(wPosition) < skillsTable.skillW.range then
+				CastSpell(_W, wPosition.x, wPosition.z)
+			end
+		end
+	end
+end
+
+function finisher()
+	if config.aggressiveSubMenu.finisherSubMenu.finisherQ then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local qPosition = predictionQ:GetPrediction(enemy)
+			local qDamage = getDmg("Q", enemy, myHero)
+
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillW.range and qDamage > enemy.health then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
+		end
+	end
+
+	if config.aggressiveSubMenu.finisherSubMenu.finisherW then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local wPosition = predictionW:GetPrediction(enemy)
+			local wDamage = getDmg("W", enemy, myHero)
+
+			if wPosition ~= nil and myHero:CanUseSpell(_W) == READY and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
+				CastSpell(_W, wPosition.x, wPosition.z)
+			end
+		end
+	end
+
+	if config.aggressiveSubMenu.finisherSubMenu.finisherR then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local rPosition = predictionW:GetPrediction(enemy)
+			local rDamage = getDmg("R", enemy, myHero)
+
+			if rPosition ~= nil and myHero:CanUseSpell(_R) == READY and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
+				CastSpell(_R, rPosition.x, rPosition.z)
+			end
+		end
+	end
+end
+
+function menu()
+	config = scriptConfig("AesGraves: Main menu", "aesGraves")
+	-- Basic submenu start
+	config:addSubMenu("AesGraves: Basic settings", "basicSubMenu")
+	config.basicSubMenu:addParam("combo", "Combo", SCRIPT_PARAM_ONKEYDOWN, false, string.byte(" "))
+	config.basicSubMenu:addParam("harass", "Harass", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
+	config.basicSubMenu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
+	-- Basic sub menu end
+
+	-- Aggressive submenu start
+	config:addSubMenu("AesGraves: Aggressive settings", "aggressiveSubMenu")
+	config.aggressiveSubMenu:addSubMenu("Combo settings", "comboSubMenu")
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboR", "Use "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
+
+	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+
+	config.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSubMenu")
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherQ", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherR", "Use "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
+	-- Aggressive submenu end
+
+	-- Defensive submenu start
+
+	-- Defensive submenu end
+
+	-- Other submenu start
+	config:addSubMenu("AesGraves: Other settings", "otherSubMenu")
+	config.otherSubMenu:addSubMenu("Drawing submenu", "drawingSubMenu")
+	config.otherSubMenu.drawingSubMenu:addParam("drawQ", "Draw "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawingSubMenu:addParam("drawW", "Draw "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawingSubMenu:addParam("drawR", "Draw "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
+
+	config.otherSubMenu:addSubMenu("Management submenu", "managementSubMenu")
+	config.otherSubMenu.managementSubMenu:addParam("manaHarass", "Minimum mana for harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
+	-- Other submenu end
 end
