@@ -11,8 +11,7 @@ end
 -- Variables
 local target
 local enemyMinions
-local rKillable = false
-local version = 1.4
+local version = 1.5
 
 -- Spell information
 local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2.0, delay = 250, width = 60}
@@ -45,40 +44,27 @@ function OnTick()
 	
 	target = targetSelector.target
 
-	if menu.scriptCombo then combo() end
-	if menu.scriptHarass then harass() end
-	if menu.scriptFarm then farm() end
-	if menu.finisherOptions.finishQ or menu.finisherOptions.finishW or menu.finisherOptions.finishR then finisher() end
+	if menu.basicSubMenu.scriptCombo then combo() end
+	if menu.basicSubMenu.scriptHarass then harass() end
+	if menu.basicSubMenu.scriptFarm then farm() end
+	if menu.aggressiveSubMenu.finisherSettings.finishQ or menu.aggressiveSubMenu.finisherSettings.finishW then finisher() end
 end
 
 function OnDraw()
-	if menu.drawOptions.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFF0000) end
-	if menu.drawOptions.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFF0000) end
-	if menu.drawOptions.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFF0000) end
+	if menu.otherSubMenu.drawSettings.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFF0000) end
+	if menu.otherSubMenu.drawSettings.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFF0000) end
+	if menu.otherSubMenu.drawSettings.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFF0000) end
 	for i, enemy in pairs(GetEnemyHeroes()) do
-		if enemy ~= nil then
-			local rPosition = predictionR:GetPrediction(enemy)
-			local rDamage = getDmg("R", enemy, myHero)
-			local rLoweredDamage = (70 / 100) * rDamage
+		local rPosition = predictionR:GetPrediction(enemy)
+		local rDamage = getDmg("R", enemy, myHero, 2)
 
-			if VIP_USER and GetDistance(enemy) < skillR.range then
-				if rCollision:GetMinionCollision(myHero, enemy) then
-					rDamage = rDamage - rLoweredDamage
-				end
-			elseif GetDistance(enemy) < skillR.range then
-				if GetMinionCollision(myHero, enemy, skillR.width) then
-					rDamage = rDamage - rLoweredDamage
-				end
-			end
-
-			if GetDistance(enemy) < skillR.range and rDamage > enemy.health and not enemy.dead and enemy.visible and myHero:CanUseSpell(_R) then
-				rKillable = true
-				PrintFloatText(enemy, 0, "Press R to do tons of damage")
-				DrawCircle(enemy.x, enemy.y, enemy.z, 150, 0xFF0000)
-				DrawCircle(enemy.x, enemy.y, enemy.z, 200, 0xFF0000)
-				DrawCircle(enemy.x, enemy.y, enemy.z, 250, 0xFF0000)
-			else
-				rKillable = false
+		if GetDistance(enemy) < skillR.range and rDamage > enemy.health and myHero:CanUseSpell(_R)  == READY then
+			PrintFloatText(enemy, 0, "Press R to do tons of damage")
+			DrawCircle(enemy.x, enemy.y, enemy.z, 150, 0xFF0000)
+			DrawCircle(enemy.x, enemy.y, enemy.z, 200, 0xFF0000)
+			DrawCircle(enemy.x, enemy.y, enemy.z, 250, 0xFF0000)
+			if menu.aggressiveSubMenu.finisherSettings.finishR and rPosition ~= nil then
+				CastSpell(_R, rPosition.x, rPosition.z)
 			end
 		end
 	end
@@ -86,10 +72,10 @@ end
 
 function combo()
 	if target ~= nil then
-		if menu.comboOptions.comboQ then
+		if menu.aggressiveSubMenu.comboSettings.comboQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
-			if GetDistance(qPosition) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) then
+			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_Q, qPosition.x, qPosition.z)
@@ -102,18 +88,18 @@ function combo()
 			end
 		end
 
-		if menu.comboOptions.comboW then
+		if menu.aggressiveSubMenu.comboSettings.comboW then
 			local wPosition = predictionW:GetPrediction(target)
 			
-			if GetDistance(qPosition) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
+			if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY then
 				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
 		
-		if menu.comboOptions.comboR then
+		if menu.aggressiveSubMenu.comboSettings.comboR then
 			local aoeRPosition = GetAoESpellPosition(skillR.width, target, skillR.delay)
 			
-			if GetDistance(qPosition) < skillR.range and aoeRPosition ~= nil and myHero:CanUseSpell(_R) then
+			if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillR.range and myHero:CanUseSpell(_R) == READY then
 				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
 			end
 		end
@@ -122,10 +108,10 @@ end
 
 function harass()
 	if target ~= nil then
-		if menu.harassOptions.harassQ then
+		if menu.aggressiveSubMenu.harassSettings.harassQ then
 			local qPosition = predictionQ:GetPrediction(target)
 			
-			if GetDistance(qPosition) < skillQ.range and qPosition ~= nil and myHero:CanUseSpell(_Q) and checkManaHarass() then
+			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and checkManaHarass() then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, qPosition) then
 						CastSpell(_Q, qPosition.x, qPosition.z)
@@ -138,34 +124,30 @@ function harass()
 			end
 		end
 		
-		if menu.harassOptions.harassW then
+		if menu.aggressiveSubMenu.harassSettings.harassW then
 			local wPosition = predictionW:GetPrediction(target)
 
-			if GetDistance(wPosition) < skillW.range and wPosition ~= nil and myHero:CanUseSpell(_W) then
-				if checkManaHarass() then
-					CastSpell(_W, wPosition.x, wPosition.z)
-				end
+			if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and checkManaHarass() then
+				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
 	end
 end
 
 function farm()
-	if menu.scriptFarm and menu.farmingOptions.farmQ and checkManaFarm() then
+	if menu.otherSubMenu.farmingSettings.farmQ and checkManaFarm() then
 		for i, minion in pairs(enemyMinions.objects) do
-			if minion ~= nil then
-				local adDamage = getDmg("AD", minion, myHero)
-				local qDamage = getDmg("Q", minion, myHero) + adDamage
+			local adDamage = getDmg("AD", minion, myHero)
+			local qDamage = getDmg("Q", minion, myHero) + adDamage
 
-				if not minion.dead and GetDistance(minion) < skillQ.range and qDamage > minion.health and myHero:CanUseSpell(_Q) then
-					if VIP_USER then
-						if not qCollision:GetMinionCollision(myHero, minion) then
-							CastSpell(_Q, minion.x, minion.z)
-						end
-					else
-						if not GetMinionCollision(myHero, minion, skillQ.width) then
-							CastSpell(_Q, minion.x, minion.z)
-						end
+			if not minion.dead and GetDistance(minion) < skillQ.range and qDamage > minion.health and myHero:CanUseSpell(_Q) == READY then
+				if VIP_USER then
+					if not qCollision:GetMinionCollision(myHero, minion) then
+						CastSpell(_Q, minion.x, minion.z)
+					end
+				else
+					if not GetMinionCollision(myHero, minion, skillQ.width) then
+						CastSpell(_Q, minion.x, minion.z)
 					end
 				end
 			end
@@ -174,57 +156,40 @@ function farm()
 end
 
 function finisher()
-	if menu.finisherOptions.finishQ then
+	if menu.aggressiveSubMenu.finisherSettings.finishQ then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy ~= nil then
-				local adDamage = getDmg("AD", enemy, myHero)
-				local qDamage = getDmg("Q", enemy, myHero) + adDamage
-				local qPosition = predictionQ:GetPrediction(enemy)
+			local adDamage = getDmg("AD", enemy, myHero)
+			local qDamage = getDmg("Q", enemy, myHero) + adDamage
+			local qPosition = predictionQ:GetPrediction(enemy)
 
-				if qDamage > enemy.health and GetDistance(qPosition) < skillQ.range and not enemy.dead and enemy.visible and qPosition ~= nil then
-					if VIP_USER then
-						if not qCollision:GetMinionCollision(myHero, qPosition) then
-							CastSpell(_Q, qPosition.x, qPosition.z)
-						end
-					else
-						if not GetMinionCollision(myHero, enemy, skillQ.width) then
-							CastSpell(_Q, qPosition.x, qPosition.z)
-						end			
+			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and qDamage > enemy.health then
+				if VIP_USER then
+					if not qCollision:GetMinionCollision(myHero, qPosition) then
+						CastSpell(_Q, qPosition.x, qPosition.z)
 					end
+				else
+					if not GetMinionCollision(myHero, enemy, skillQ.width) then
+						CastSpell(_Q, qPosition.x, qPosition.z)
+					end			
 				end
 			end
 		end
 	end
 
-	if menu.finisherOptions.finishW then
+	if menu.aggressiveSubMenu.finisherSettings.finishW then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy ~= nil then 
-				local wPosition = predictionW:GetPrediction(enemy)
-				local wDamage = getDmg("W", enemy, myHero) + myHero.ap
-					
-				if wDamage >= enemy.health and GetDistance(wPosition) <= skillW.range and not enemy.dead and enemy.visible and wPosition ~= nil and myHero:CanUseSpell(_W) then
-					CastSpell(_W, wPosition.x, wPosition.z)
-				end
-			end
-		end
-	end
-		
-	if menu.finisherOptions.finishR then
-		for i, enemy in pairs(GetEnemyHeroes()) do
-			if enemy ~= nil then
-				local rDamage = getDmg("R", enemy, myHero)
-				local rPosition = predictionR:GetPrediction(enemy)
-
-				if rKillable == true and rPosition ~= nil then
-					CastSpell(_R, rPosition.x, rPosition.z)
-				end
+			local wPosition = predictionW:GetPrediction(enemy)
+			local wDamage = getDmg("W", enemy, myHero) + myHero.ap
+				
+			if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and wDamage > enemy.health then
+				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
 	end
 end
 
 function checkManaHarass()
-	if myHero.mana >= myHero.maxMana * (menu.managementOptions.manaProcentHarass / 100) then
+	if myHero.mana >= myHero.maxMana * (menu.otherSubMenu.managementSettings.manaProcentHarass / 100) then
 		return true
 	else
 		return false
@@ -232,7 +197,7 @@ function checkManaHarass()
 end
 
 function checkManaFarm()
-	if myHero.mana >= myHero.maxMana * (menu.managementOptions.manaProcentFarm / 100) then
+	if myHero.mana >= myHero.maxMana * (menu.otherSubMenu.managementSettings.manaProcentFarm / 100) then
 		return true
 	else
 		return false
@@ -240,35 +205,41 @@ function checkManaFarm()
 end
 	
 function menu()
-	menu = scriptConfig("AesEzreal", "aesezreal")
+	menu = scriptConfig("AesEzreal: Main menu", "aesezreal")
+
+	menu:addSubMenu("AesEzreal: Basic settings", "basicSubMenu")
+	menu.basicSubMenu:addParam("scriptCombo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+	menu.basicSubMenu:addParam("scriptHarass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("A"))
+	menu.basicSubMenu:addParam("scriptFarm", "Use farm", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	menu.basicSubMenu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
+
+	menu:addSubMenu("AesEzreal: Aggressive settings", "aggressiveSubMenu")
 	-- Combo submenu
-	menu:addSubMenu("Combo options", "comboOptions")
-	menu.comboOptions:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.comboOptions:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.comboOptions:addParam("comboR", "Use "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu:addSubMenu("Combo settings", "comboSettings")
+	menu.aggressiveSubMenu.comboSettings:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu.comboSettings:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu.comboSettings:addParam("comboR", "Use "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
 	-- Harass submenu
-	menu:addSubMenu("Harass options", "harassOptions")
-	menu.harassOptions:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.harassOptions:addParam("harassW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
-	-- Farming submenu
-	menu:addSubMenu("Farming options", "farmingOptions")
-	menu.farmingOptions:addParam("farmQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu:addSubMenu("Harass settings", "harassSettings")
+	menu.aggressiveSubMenu.harassSettings:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu.harassSettings:addParam("harassW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
 	-- Finisher submenu
-	menu:addSubMenu("Finisher options", "finisherOptions")
-	menu.finisherOptions:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.finisherOptions:addParam("finishW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
-	menu.finisherOptions:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, 82)
+	menu.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSettings")
+	menu.aggressiveSubMenu.finisherSettings:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu.finisherSettings:addParam("finishW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu.finisherSettings:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, GetKey("R"))
+
+	menu:addSubMenu("AesEzreal: Other settings", "otherSubMenu")
+	-- Farming submenu
+	menu.otherSubMenu:addSubMenu("Farming settings", "farmingSettings")
+	menu.otherSubMenu.farmingSettings:addParam("farmQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	-- Management submenu
-	menu:addSubMenu("Management options", "managementOptions")
-	menu.managementOptions:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
-	menu.managementOptions:addParam("manaProcentFarm", "Minimum mana to farm", SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
+	menu.otherSubMenu:addSubMenu("Management settings", "managementSettings")
+	menu.otherSubMenu.managementSettings:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
+	menu.otherSubMenu.managementSettings:addParam("manaProcentFarm", "Minimum mana to farm", SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
 	-- Draw submenu
-	menu:addSubMenu("Draw options", "drawOptions")
-	menu.drawOptions:addParam("drawQ", "Draw "..skillQ.spellName.. " range", SCRIPT_PARAM_ONOFF, false)
-	menu.drawOptions:addParam("drawW", "Draw "..skillW.spellName.. " range", SCRIPT_PARAM_ONOFF, false)
-	menu.drawOptions:addParam("drawR", "Draw "..skillR.spellName.. " range", SCRIPT_PARAM_ONOFF, false)
-	-- Script combo and harass bottoms
-	menu:addParam("scriptCombo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-	menu:addParam("scriptHarass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, 65)
-	menu:addParam("scriptFarm", "Use farm", SCRIPT_PARAM_ONKEYDOWN, false, 88)
+	menu.otherSubMenu:addSubMenu("Draw settings", "drawSettings")
+	menu.otherSubMenu.drawSettings:addParam("drawQ", "Draw "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.otherSubMenu.drawSettings:addParam("drawW", "Draw "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.otherSubMenu.drawSettings:addParam("drawR", "Draw "..skillR.spellName, SCRIPT_PARAM_ONOFF, false)
 end
