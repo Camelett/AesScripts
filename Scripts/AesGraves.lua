@@ -7,7 +7,7 @@ local target = nil
 local version = 0.1
 
 local skillsTable = {
-	skillW = {name = "Buckshot", range = 950, speed = .902, delay = 250},
+	skillQ = {name = "Buckshot", range = 950, speed = .902, delay = 250},
 	skillW = {name = "Smoke Screen", range = 950, speed = 1.650, delay = 250},
 	skillE = {name = "Quickdraw"},
 	skillR = {name = "Collateral Damage", range = 1000, speed = 1.4, delay = 250, radius = 210}
@@ -16,11 +16,11 @@ local skillsTable = {
 function OnLoad()
 	if VIP_USER then
 		prodiction = ProdictManager.GetInstance()
-		predictionQ = prodiction:AddProdictionObject(_Q, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000)
+		predictionQ = prodiction:AddProdictionObject(_Q, skillsTable.skillQ.range, skillsTable.skillQ.speed * 1000, skillsTable.skillQ.delay / 1000)
 		predictionW = prodiction:AddProdictionObject(_W, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000)
 		predictionR = prodiction:AddProdictionObject(_R, skillsTable.skillR.range, skillsTable.skillR.speed * 1000, skillsTable.skillR.delay / 1000)
 	else
-		predictionQ = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay)
+		predictionQ = TargetPrediction(skillsTable.skillQ.range, skillsTable.skillQ.speed, skillsTable.skillQ.delay)
 		predictionW = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay)
 		predictionR = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay)
 	end
@@ -41,7 +41,7 @@ function OnTick()
 end
 
 function OnDraw()
-	if config.otherSubMenu.drawingSubMenu.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, 0xFFFFFF) end
+	if config.otherSubMenu.drawingSubMenu.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillQ.range, 0xFFFFFF) end
 	if config.otherSubMenu.drawingSubMenu.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, 0xFFFFFF) end
 	if config.otherSubMenu.drawingSubMenu.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillsTable.skillR.range, 0xFFFFFF) end
 end
@@ -51,7 +51,7 @@ function combo()
 		if config.aggressiveSubMenu.comboSubMenu.comboQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
-			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillW.range then
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillQ.range then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
@@ -79,7 +79,7 @@ function harass()
 		if config.aggressiveSubMenu.harassSubMenu.harassQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
-			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillW.range then
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillQ.range then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
@@ -100,7 +100,7 @@ function finisher()
 			local qPosition = predictionQ:GetPrediction(enemy)
 			local qDamage = getDmg("Q", enemy, myHero)
 
-			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillW.range and qDamage > enemy.health then
+			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillQ.range and qDamage > enemy.health then
 				CastSpell(_Q, qPosition.x, qPosition.z)
 			end
 		end
@@ -141,16 +141,16 @@ function menu()
 	-- Aggressive submenu start
 	config:addSubMenu("AesGraves: Aggressive settings", "aggressiveSubMenu")
 	config.aggressiveSubMenu:addSubMenu("Combo settings", "comboSubMenu")
-	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboR", "Use "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
 
 	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
-	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 
 	config.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSubMenu")
-	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherQ", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherQ", "Use "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherR", "Use "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
 	-- Aggressive submenu end
@@ -162,7 +162,7 @@ function menu()
 	-- Other submenu start
 	config:addSubMenu("AesGraves: Other settings", "otherSubMenu")
 	config.otherSubMenu:addSubMenu("Drawing submenu", "drawingSubMenu")
-	config.otherSubMenu.drawingSubMenu:addParam("drawQ", "Draw "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawingSubMenu:addParam("drawQ", "Draw "..skillsTable.skillQ.name, SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawingSubMenu:addParam("drawW", "Draw "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawingSubMenu:addParam("drawR", "Draw "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
 
