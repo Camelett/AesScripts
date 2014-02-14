@@ -15,7 +15,7 @@ local rocket = false
 --Skill table
 local skillsTable = {
 	skillQ = {name = "Switcheroo!", minigunRange = 525, fishRange = 525},
-	skillW = {name = "Zap!", range = 1500, speed = 3.3, delay = 600, width = 60},
+	skillW = {name = "Zap!", range = 1500, speed = 3.3, delay = 600, width = 90},
 	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 375},
 	skillR = {name = "Super Mega Death Rocket!", range = 2000, speed = 1.2, delay = 600, width = 120, radius = 450}
 }
@@ -26,7 +26,7 @@ function OnLoad()
 		predictionW = prodiction:AddProdictionObject(_W, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
 		predictionE = prodiction:AddProdictionObject(_E, skillsTable.skillE.range, skillsTable.skillE.speed * 1000, skillsTable.skillE.delay / 1000)
 		predictionR = prodiction:AddProdictionObject(_R, skillsTable.skillR.range, skillsTable.skillR.speed * 1000, skillsTable.skillR.delay / 1000, skillsTable.skillR.width)
-		wCollision = Collision(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
+		wCollision = Collision(skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
 	else
 		predictionW = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
 		predictionE = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed, skillsTable.skillE.delay)
@@ -168,7 +168,7 @@ function rocketLauncher()
 			CastSpell(_Q)
 		elseif myHero:CanUseSpell(_Q) and GetDistance(target) >= skillsTable.skillQ.minigunRange and GetDistance(target) <= skillsTable.skillQ.fishRange and rocket == false then
 			CastSpell(_Q)
-		elseif myHero:CanUseSpell(_Q) and GetDistance(target) > skillsTable.skillQ.fishRange and rocket == true then
+		elseif myHero:CanUseSpell(_Q) and GetDistance(target) > skillsTable.skillQ.fishRange + 300 and rocket == true then
 			CastSpell(_Q)
 		end
 	end
@@ -204,17 +204,17 @@ end
 
 function getQRange()
 	if myHero:GetSpellData(_Q).level == 1 then
-		skillsTable.skillQ.fishRange = 525 + 75
+		skillsTable.skillQ.fishRange = 525 + 75 + 65
 	elseif myHero:GetSpellData(_Q).level == 2 then
-		skillsTable.skillQ.fishRange = 525 + 100
+		skillsTable.skillQ.fishRange = 525 + 100 + 65
 	elseif myHero:GetSpellData(_Q).level == 3 then
-		skillsTable.skillQ.fishRange = 525 + 125
+		skillsTable.skillQ.fishRange = 525 + 125 + 65
 	elseif myHero:GetSpellData(_Q).level == 4 then
-		skillsTable.skillQ.fishRange = 525 + 150
+		skillsTable.skillQ.fishRange = 525 + 150 + 65
 	elseif myHero:GetSpellData(_Q).level == 5 then
-		skillsTable.skillQ.fishRange = 525 + 175
+		skillsTable.skillQ.fishRange = 525 + 175 + 65
 	else
-		skillsTable.skillQ.fishRange = 525
+		skillsTable.skillQ.fishRange = 525 + 65
 	end
 end
 
