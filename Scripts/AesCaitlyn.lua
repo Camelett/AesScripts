@@ -45,6 +45,7 @@ function OnTick()
 	if config.basicSubMenu.harass then harass() end
 	if config.basicSubMenu.reverseE then reversedE() end
 	if config.defensiveSubMenu.trappingSubMenu.autoW then trap() end
+	if config.otherSubMenu.miscSubMenu.autoQ then stunQ() end
 	if config.aggressiveSubMenu.finisherSubMenu.finishQ or config.aggressiveSubMenu.finisherSubMenu.finishE or config.aggressiveSubMenu.finisherSubMenu.finishR then finisher() end
 end
 
@@ -165,6 +166,18 @@ function finisher()
 	end
 end
 
+function stunQ()
+	if config.otherSubMenu.miscSubMenu.autoQ then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local qPosition = predictionQ:GetPrediction(enemy)
+
+			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and not enemy.canMove then
+				CastSpell(_Q, qPosition.x, qPosition.z)
+			end
+		end
+	end
+end
+
 function trap()
 	if config.defensiveSubMenu.trappingSubMenu.autoW then
 		for i, enemy in pairs(GetEnemyHeroes()) do
@@ -176,7 +189,7 @@ function trap()
 end
 
 function reversedE()
-	if myHero:CanUseSpell(_E) == READY then
+	if config.otherSubMenu.miscSubMenu.enableE and myHero:CanUseSpell(_E) == READY then
 		-- credits to jbman for calculations
 		local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
 		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -220,14 +233,14 @@ function menu()
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillW.range, 0)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeW", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 800, 0, skillW.range, 0)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
 
 	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeQ", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillW.range, 0)
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
 
 	config.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSubMenu")
@@ -244,11 +257,15 @@ function menu()
 	-- Other submenu
 	config:addSubMenu("AesCaitlyn: Other settings", "otherSubMenu")
 
-	config.otherSubMenu:addSubMenu("Management settingss", "managementOptions")
+	config.otherSubMenu:addSubMenu("Management settings", "managementOptions")
 	config.otherSubMenu.managementOptions:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
 
+	config.otherSubMenu:addSubMenu("Misc settings", "miscSubMenu")
+	config.otherSubMenu.miscSubMenu:addParam("enableE", "Enable reversed "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.miscSubMenu:addParam("autoQ", "Use "..skillQ.spellName.." on stunned target", SCRIPT_PARAM_ONOFF, false)
+
 	config.otherSubMenu:addSubMenu("Drawing settings", "drawSubMenu")
-	config.otherSubMenu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawSubMenu:addParam("drawQ", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawSubMenu:addParam("drawW", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawSubMenu:addParam("drawE", "Draw "..skillE.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawSubMenu:addParam("drawR", "Draw "..skillR.spellName.." range", SCRIPT_PARAM_ONOFF, false)
