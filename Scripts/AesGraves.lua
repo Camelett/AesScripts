@@ -4,10 +4,10 @@ if VIP_USER then require "Prodiction" end
 require "AoE_Skillshot_Position"
 
 local target = nil
-local version = 0.1
+local version = 0.2
 
 local skillsTable = {
-	skillQ = {name = "Buckshot", range = 950, speed = .902, delay = 250},
+	skillQ = {name = "Buckshot", range = 900, speed = .902, delay = 250},
 	skillW = {name = "Smoke Screen", range = 950, speed = 1.650, delay = 250},
 	skillE = {name = "Quickdraw"},
 	skillR = {name = "Collateral Damage", range = 1000, speed = 1.4, delay = 250, radius = 210}
@@ -32,9 +32,8 @@ end
 
 function OnTick()
 	targetSelector:update()
-
 	target = targetSelector.target
-
+	
 	if config.basicSubMenu.combo then combo() end
 	if config.basicSubMenu.harass then harass() end
 	if config.aggressiveSubMenu.finisherSubMenu.finisherQ or config.aggressiveSubMenu.finisherSubMenu.finisherW or config.aggressiveSubMenu.finisherSubMenu.finisherR then finisher() end
@@ -52,7 +51,13 @@ function combo()
 			local qPosition = predictionQ:GetPrediction(target)
 
 			if qPosition ~= nil and myHero:CanUseSpell(_Q) == READY and GetDistance(qPosition) < skillsTable.skillQ.range then
-				CastSpell(_Q, qPosition.x, qPosition.z)
+				if _G.MMA_Loaded then
+					if _G.MMA_NextAttackAvailability >= 0.5 and _G.MMA_NextAttackAvailability <= 0.8 then
+						CastSpell(_Q, qPosition.x, qPosition.z)
+					end
+				else
+					CastSpell(_Q, qPosition.x, qPosition.z)
+				end
 			end
 		end
 
