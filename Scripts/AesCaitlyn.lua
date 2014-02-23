@@ -37,7 +37,7 @@ end
 
 function OnTick()
 	targetSelector:update()
-	skillR.range = getRRange()
+	getRRange()
 
 	target = targetSelector.target
 
@@ -85,7 +85,7 @@ function combo()
 
 			if ePosition ~= nil and myHero:CanUseSpell(_E) == READY and config.aggressiveSubMenu.comboSubMenu.comboRangeE > GetDistance(ePosition) then
 				if VIP_USER then
-					if not GetMinionCollision(myHero, target, skillE.width) then
+					if not eCollision:GetMinionCollision(myHero, ePosition) then
 						CastSpell(_E, ePosition.x, ePosition.z)
 					end
 				else
@@ -209,11 +209,11 @@ end
 
 function getRRange()
 	if player:GetSpellData(_R).level == 1 or player:GetSpellData(_R).level == 0 then
-		return 2000
+		skillR.range = 2000
 	elseif player:GetSpellData(_R).level == 2 then
-		return 2500 
+		skillR.range = 2500 
 	elseif player:GetSpellData(_R).level == 3 then
-		return 3000
+		skillR.range = 3000
 	end
 end
 
@@ -233,14 +233,14 @@ function menu()
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillW.range, 0)
+	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeW", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 800, 0, skillW.range, 0)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
 
 	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassE", "Use "..skillE.spellName, SCRIPT_PARAM_ONOFF, false)
-	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeQ", "Set "..skillW.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillW.range, 0)
+	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeQ", "Set "..skillQ.spellName.." range", SCRIPT_PARAM_SLICE, 1300, 0, skillQ.range, 0)
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassRangeE", "Set "..skillE.spellName.." range", SCRIPT_PARAM_SLICE, 1000, 0, skillE.range, 0)
 
 	config.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSubMenu")
@@ -265,7 +265,7 @@ function menu()
 	config.otherSubMenu.miscSubMenu:addParam("autoQ", "Use "..skillQ.spellName.." on stunned target", SCRIPT_PARAM_ONOFF, false)
 
 	config.otherSubMenu:addSubMenu("Drawing settings", "drawSubMenu")
-	config.otherSubMenu.drawSubMenu:addParam("drawQ", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu.drawSubMenu:addParam("drawQ", "Draw "..skillQ.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawSubMenu:addParam("drawW", "Draw "..skillW.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawSubMenu:addParam("drawE", "Draw "..skillE.spellName.." range", SCRIPT_PARAM_ONOFF, false)
 	config.otherSubMenu.drawSubMenu:addParam("drawR", "Draw "..skillR.spellName.." range", SCRIPT_PARAM_ONOFF, false)
