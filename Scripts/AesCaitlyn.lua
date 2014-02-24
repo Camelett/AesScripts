@@ -37,7 +37,7 @@ end
 
 function OnTick()
 	targetSelector:update()
-	getRRange()
+	skillR.range = getRRange()
 
 	target = targetSelector.target
 
@@ -209,11 +209,11 @@ end
 
 function getRRange()
 	if player:GetSpellData(_R).level == 1 or player:GetSpellData(_R).level == 0 then
-		skillR.range = 2000
+		return 2000
 	elseif player:GetSpellData(_R).level == 2 then
-		skillR.range = 2500 
+		return 2500 
 	elseif player:GetSpellData(_R).level == 3 then
-		skillR.range = 3000
+		return 3000
 	end
 end
 
