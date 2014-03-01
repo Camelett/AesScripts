@@ -66,10 +66,10 @@ function OnDraw()
 			local rDamage = getDmg("R", enemy, myHero)
 			
 			if ValidTarget(enemy) and rDamage > enemy.health then
-				PrintFloatText(enemy, 0, "Killable target with ultimate")
-				DrawCircle2(enemy.x, enemy.y, enemy.z, 150, ARGB(255, 255, 255, 0))
-				DrawCircle2(enemy.x, enemy.y, enemy.z, 200, ARGB(255, 255, 255, 0))
-				DrawCircle2(enemy.x, enemy.y, enemy.z, 250, ARGB(255, 255, 255, 0))
+				DrawText3D("Killable target with ultimate", enemy.x, enemy.y, enemy.z, 10, ARGB(255, 255, 255, 255), center)
+				DrawCircle2(enemy.x, enemy.y, enemy.z, 150, ARGB(255, 255, 255, 255))
+				DrawCircle2(enemy.x, enemy.y, enemy.z, 200, ARGB(255, 255, 255, 255))
+				DrawCircle2(enemy.x, enemy.y, enemy.z, 250, ARGB(255, 255, 255, 255))
 			end
 		end
 	end
