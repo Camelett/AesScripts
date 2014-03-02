@@ -7,8 +7,7 @@ end
 require "AoE_Skillshot_Position"
 
 local target = nil
-local version = 0.1
-local qActive = false
+local version = 0.2
 
 local SkillQ = {name = "Frost Shot"}
 local SkillW = {name = "Volley", range = 1100, speed = .902, delay = 250, width = 175}
@@ -45,6 +44,7 @@ function OnTick()
 	if Config.basicSubMenu.aoeR then aoeR() end
 	if Config.basicSubMenu.harass then Harass() end
 	if Config.aggressiveSubMenu.finishSubMenu.finishW or Config.aggressiveSubMenu.finishSubMenu.finishR then Finisher() end
+	if myHero:GetSpellData(_Q).toggleState == 1 and Config.aggressiveSubMenu.comboSubMenu.exploitQ then CastSpell(_Q) end
 end
 
 function OnDraw()
@@ -55,12 +55,6 @@ end
 
 function Combo()
 	if target ~= nil then
-		if Config.aggressiveSubMenu.comboSubMenu.comboQ and checkManaQ() then
-			if qActive == false and GetDistance(target) < 700 and ValidTarget(target) then
-				CastSpell(_Q)
-			end
-		end
-		
 		if Config.aggressiveSubMenu.comboSubMenu.comboW then
 			local wPosition = predictionW:GetPrediction(target)
 			
@@ -85,8 +79,12 @@ function Combo()
 			end
 		end
 	end
-	if target == nil and qActive == true then
-		CastSpell(_Q)
+	if Config.aggressiveSubMenu.comboSubMenu.comboQ then
+		if target ~= nil and ValidTarget(target) and myHero:GetSpellData(_Q).toggleState == 1 then
+			CastSpell(_Q)
+		elseif myHero:GetSpellData(_Q).toggleState == 2 and target == nil then
+			CastSpell(_Q)
+		end
 	end
 end
 
@@ -135,7 +133,7 @@ function Finisher()
 			local rPosition = predictionR:GetPrediction(enemy)
 			local rDmg = getDmg("R", enemy, myHero)
 			
-			if rPosition ~= nil and GetDistance(rPosition) < SkillR.range and ValidTarget(enemy) and myHero:CanUseSpell(_R) == READY and rDmg > enemy.health then
+			if rPosition ~= nil and GetDistance(rPosition) < SkillR.range and GetPredictionHealth(enemy, SkillR.delay) + 100 < rDmg and rDmg > enemy.health and ValidTarget(enemy) and myHero:CanUseSpell(_R) == READY then
 				CastSpell(_R, rPosition.x, rPosition.z)
 			end
 		end
@@ -168,23 +166,25 @@ function getERange()
 	end
 end
 
-function OnCreateObj(obj)
-	if obj ~= nil and obj.name == "Ashe_Base_q_buf.troy" then
-		qActive = true
-	end
-end
+function OnProcessSpell(object, spell)
+	local spellName = spell.name
 
-function OnDeleteObj(obj)
-	if obj ~= nil and obj.name == "Ashe_Base_q_buf.troy" then
-		qActive = false
-	end
-end
-
-function checkManaQ()
-	if myHero.mana >= myHero.maxMana * (Config.otherSubMenu.managementSubMenu.qMana / 100) then
-		return true
-	else
-		return false
+	if Config.aggressiveSubMenu.comboSubMenu.exploitQ then
+		if object.isMe and spellName == "frostarrow" then
+			continueFrost = false
+			
+			for i=1, heroManager.iCount do
+				local target = heroManager:GetHero(i)
+		
+				if target ~= nil and ValidTarget(target) and math.sqrt((target.x - spell.startPos.x)^2 + (target.z - spell.startPos.z)^2) < 80 then 
+					continueFrost = true
+				end
+			end
+			
+			if continueFrost == false then
+				CastSpell(_Q)
+			end
+		end	
 	end
 end
 
@@ -210,6 +210,7 @@ function Menu()
 	Config.aggressiveSubMenu.comboSubMenu:addParam("comboQ", "Use "..SkillQ.name, SCRIPT_PARAM_ONOFF, false)
 	Config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..SkillW.name, SCRIPT_PARAM_ONOFF, false)
 	Config.aggressiveSubMenu.comboSubMenu:addParam("comboR", "Use "..SkillR.name, SCRIPT_PARAM_ONOFF, false)
+	Config.aggressiveSubMenu.comboSubMenu:addParam("exploitQ", "Use "..SkillQ.name.." exploit", SCRIPT_PARAM_ONOFF, false)
 	
 	Config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
 	Config.aggressiveSubMenu.harassSubMenu:addParam("harassW", "Use "..SkillW.name, SCRIPT_PARAM_ONOFF, false)
@@ -220,7 +221,6 @@ function Menu()
 	
 	Config:addSubMenu("AesAshe: Other settings", "otherSubMenu")
 	Config.otherSubMenu:addSubMenu("Management settings", "managementSubMenu")
-	Config.otherSubMenu.managementSubMenu:addParam("qMana", "Minimum mana for "..SkillQ.name, SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
 	Config.otherSubMenu.managementSubMenu:addParam("harassMana", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
 	
 	Config.otherSubMenu:addSubMenu("Drawing settings", "drawSubMenu")
