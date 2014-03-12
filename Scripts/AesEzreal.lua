@@ -11,7 +11,11 @@ end
 -- Variables
 local target
 local enemyMinions
-local version = 1.5
+local version = 1.6
+local lastAnimation = nil
+local lastAttack = 0
+local lastAttackCD = 0
+local lastWindUpTime = 0
 
 -- Spell information
 local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2.0, delay = 250, width = 60}
@@ -36,6 +40,9 @@ function OnLoad()
 	menu()
 	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, true)
 	enemyMinions = minionManager(MINION_ENEMY, skillR.range, myHero)
+	
+	targetSelector.name = "AesEzreal"
+	menu:addTS(targetSelector)
 end
 	
 function OnTick()
@@ -51,18 +58,19 @@ function OnTick()
 end
 
 function OnDraw()
-	if menu.otherSubMenu.drawSettings.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, 0xFF0000) end
-	if menu.otherSubMenu.drawSettings.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, 0xFF0000) end
-	if menu.otherSubMenu.drawSettings.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, 0xFF0000) end
+	if menu.otherSubMenu.drawSettings.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, RGB(255, 255, 255)) end
+	if menu.otherSubMenu.drawSettings.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, RGB(255, 255, 255)) end
+	if menu.otherSubMenu.drawSettings.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, RGB(255, 255, 255)) end
 	for i, enemy in pairs(GetEnemyHeroes()) do
 		local rPosition = predictionR:GetPrediction(enemy)
 		local rDamage = getDmg("R", enemy, myHero, 2)
 
-		if GetDistance(enemy) < skillR.range and rDamage > enemy.health and myHero:CanUseSpell(_R)  == READY then
+		if GetDistance(enemy) < skillR.range and ValidTarget(enemy) and rDamage > enemy.health and myHero:CanUseSpell(_R)  == READY then
 			PrintFloatText(enemy, 0, "Press R to do tons of damage")
-			DrawCircle(enemy.x, enemy.y, enemy.z, 150, 0xFF0000)
-			DrawCircle(enemy.x, enemy.y, enemy.z, 200, 0xFF0000)
-			DrawCircle(enemy.x, enemy.y, enemy.z, 250, 0xFF0000)
+			DrawCircle(enemy.x, enemy.y, enemy.z, 150, RGB(100, 0, 0))
+			DrawCircle(enemy.x, enemy.y, enemy.z, 200, RGB(100, 0, 0))
+			DrawCircle(enemy.x, enemy.y, enemy.z, 250, RGB(100, 0, 0))
+			
 			if menu.aggressiveSubMenu.finisherSettings.finishR and rPosition ~= nil then
 				CastSpell(_R, rPosition.x, rPosition.z)
 			end
@@ -71,7 +79,7 @@ function OnDraw()
 end
 
 function combo()
-	if target ~= nil then
+	if target ~= nil and ValidTarget(target) then
 		if menu.aggressiveSubMenu.comboSettings.comboQ then
 			local qPosition = predictionQ:GetPrediction(target)
 
@@ -103,11 +111,17 @@ function combo()
 				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
 			end
 		end
+		
+		if menu.basicSubMenu.orbEnable then
+			OrbWalking(target)
+		end
+	else 
+		moveToCursor()
 	end
 end
 
 function harass()
-	if target ~= nil then
+	if target ~= nil and ValidTarget(target) then
 		if menu.aggressiveSubMenu.harassSettings.harassQ then
 			local qPosition = predictionQ:GetPrediction(target)
 			
@@ -131,15 +145,21 @@ function harass()
 				CastSpell(_W, wPosition.x, wPosition.z)
 			end
 		end
+		
+		if menu.basicSubMenu.orbEnable then
+			OrbWalking(target)
+		end
+	else 
+		moveToCursor()
 	end
 end
 
 function farm()
-	if menu.otherSubMenu.farmingSettings.farmQ and checkManaFarm() then
+	if menu.basicSubMenu.scriptFarm and menu.aggressiveSubMenu.farmingSettings.farmQ and checkManaFarm() then
 		for i, minion in pairs(enemyMinions.objects) do
 			local adDamage = getDmg("AD", minion, myHero)
-			local qDamage = getDmg("Q", minion, myHero) + adDamage
-
+			local qDamage = getDmg("Q", minion, myHero) + adDamage + getExtraDamage(minion)
+			
 			if not minion.dead and GetDistance(minion) < skillQ.range and qDamage > minion.health and myHero:CanUseSpell(_Q) == READY then
 				if VIP_USER then
 					if not qCollision:GetMinionCollision(myHero, minion) then
@@ -159,7 +179,7 @@ function finisher()
 	if menu.aggressiveSubMenu.finisherSettings.finishQ then
 		for i, enemy in pairs(GetEnemyHeroes()) do
 			local adDamage = getDmg("AD", enemy, myHero)
-			local qDamage = getDmg("Q", enemy, myHero) + adDamage
+			local qDamage = getDmg("Q", enemy, myHero) + adDamage + getExtraDamage(enemy)
 			local qPosition = predictionQ:GetPrediction(enemy)
 
 			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and qDamage > enemy.health then
@@ -188,6 +208,7 @@ function finisher()
 	end
 end
 
+
 function checkManaHarass()
 	if myHero.mana >= myHero.maxMana * (menu.otherSubMenu.managementSettings.manaProcentHarass / 100) then
 		return true
@@ -203,6 +224,57 @@ function checkManaFarm()
 		return false
 	end
 end
+
+function getExtraDamage(Target)
+	local extraDamage = 0
+	
+	if GetInventoryHaveItem(3078) then -- Trinity force
+		extraDamage = getDmg("TRINITY", Target, myHero)
+	end
+	
+	if GetInventoryHaveItem(3057) then -- Sheen
+		extraDamage = getDmg("SHEEN", Target, myHero)
+	end
+	
+	return extraDamage
+end
+
+function OrbWalking(Target)
+	if TimeToAttack() and GetDistance(Target) <= myHero.range + GetDistance(myHero.minBBox) then
+		myHero:Attack(Target)
+    elseif heroCanMove() then
+        moveToCursor()
+    end
+end
+
+function TimeToAttack()
+    return (GetTickCount() + GetLatency()/2 > lastAttack + lastAttackCD)
+end
+
+function heroCanMove()
+	return (GetTickCount() + GetLatency()/2 > lastAttack + lastWindUpTime + 20)
+end
+
+function moveToCursor()
+	if GetDistance(mousePos) then
+		local moveToPos = myHero + (Vector(mousePos) - myHero):normalized()*300
+		myHero:MoveTo(moveToPos.x, moveToPos.z)
+    end        
+end
+
+function OnProcessSpell(object,spell)
+	if object == myHero then
+		if spell.name:lower():find("attack") then
+			lastAttack = GetTickCount() - GetLatency()/2
+			lastWindUpTime = spell.windUpTime*1000
+			lastAttackCD = spell.animationTime*1000
+        end
+    end
+end
+
+function OnAnimation(unit,animationName)
+    if unit.isMe and lastAnimation ~= animationName then lastAnimation = animationName end
+end
 	
 function menu()
 	menu = scriptConfig("AesEzreal: Main menu", "aesezreal")
@@ -211,6 +283,7 @@ function menu()
 	menu.basicSubMenu:addParam("scriptCombo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 	menu.basicSubMenu:addParam("scriptHarass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("A"))
 	menu.basicSubMenu:addParam("scriptFarm", "Use farm", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	menu.basicSubMenu:addParam("orbEnable", "Enable orbwalking", SCRIPT_PARAM_ONOFF, false)
 	menu.basicSubMenu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
 
 	menu:addSubMenu("AesEzreal: Aggressive settings", "aggressiveSubMenu")
@@ -228,11 +301,11 @@ function menu()
 	menu.aggressiveSubMenu.finisherSettings:addParam("finishQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.aggressiveSubMenu.finisherSettings:addParam("finishW", "Use "..skillW.spellName, SCRIPT_PARAM_ONOFF, false)
 	menu.aggressiveSubMenu.finisherSettings:addParam("finishR", "Use "..skillR.spellName, SCRIPT_PARAM_ONKEYDOWN, false, GetKey("R"))
-
-	menu:addSubMenu("AesEzreal: Other settings", "otherSubMenu")
 	-- Farming submenu
-	menu.otherSubMenu:addSubMenu("Farming settings", "farmingSettings")
-	menu.otherSubMenu.farmingSettings:addParam("farmQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	menu.aggressiveSubMenu:addSubMenu("Farming settings", "farmingSettings")
+	menu.aggressiveSubMenu.farmingSettings:addParam("farmQ", "Use "..skillQ.spellName, SCRIPT_PARAM_ONOFF, false)
+	
+	menu:addSubMenu("AesEzreal: Other settings", "otherSubMenu")
 	-- Management submenu
 	menu.otherSubMenu:addSubMenu("Management settings", "managementSettings")
 	menu.otherSubMenu.managementSettings:addParam("manaProcentHarass", "Minimum mana to harass", SCRIPT_PARAM_SLICE, 50, 0, 100, 0)
