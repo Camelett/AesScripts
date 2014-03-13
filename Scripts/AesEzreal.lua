@@ -38,8 +38,8 @@ function OnLoad()
 	
 	PrintChat("AesEzreal loaded! Version: "..version)
 	menu()
-	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, true)
-	enemyMinions = minionManager(MINION_ENEMY, skillR.range, myHero)
+	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, false)
+	enemyMinions = minionManager(MINION_ENEMY, skillQ.range, myHero)
 	
 	targetSelector.name = "AesEzreal"
 	menu:addTS(targetSelector)
@@ -53,26 +53,29 @@ function OnTick()
 
 	if menu.basicSubMenu.scriptCombo then combo() end
 	if menu.basicSubMenu.scriptHarass then harass() end
+	if menu.basicSubMenu.aoeR then aoeR() end
 	if menu.basicSubMenu.scriptFarm then farm() end
 	if menu.aggressiveSubMenu.finisherSettings.finishQ or menu.aggressiveSubMenu.finisherSettings.finishW then finisher() end
 end
 
 function OnDraw()
-	if menu.otherSubMenu.drawSettings.drawQ then DrawCircle(myHero.x, myHero.y, myHero.z, skillQ.range, RGB(255, 255, 255)) end
-	if menu.otherSubMenu.drawSettings.drawW then DrawCircle(myHero.x, myHero.y, myHero.z, skillW.range, RGB(255, 255, 255)) end
-	if menu.otherSubMenu.drawSettings.drawR then DrawCircle(myHero.x, myHero.y, myHero.z, skillR.range, RGB(255, 255, 255)) end
-	for i, enemy in pairs(GetEnemyHeroes()) do
-		local rPosition = predictionR:GetPrediction(enemy)
-		local rDamage = getDmg("R", enemy, myHero, 2)
+	if menu.otherSubMenu.drawSettings.drawQ then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillQ.range, 1, RGB(255, 255, 255)) end
+	if menu.otherSubMenu.drawSettings.drawW then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillW.range, 1, RGB(255, 255, 255)) end
+	if menu.otherSubMenu.drawSettings.drawR then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillR.range, 1, RGB(255, 255, 255)) end
+	if target ~= nil and GetDistance(target) <= skillR.range and myHero:CanUseSpell(_R) == READY then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			local rPosition = predictionR:GetPrediction(enemy)
+			local rDamage = getDmg("R", enemy, myHero, 2)
 
-		if GetDistance(enemy) < skillR.range and ValidTarget(enemy) and rDamage > enemy.health and myHero:CanUseSpell(_R)  == READY then
-			PrintFloatText(enemy, 0, "Press R to do tons of damage")
-			DrawCircle(enemy.x, enemy.y, enemy.z, 150, RGB(100, 0, 0))
-			DrawCircle(enemy.x, enemy.y, enemy.z, 200, RGB(100, 0, 0))
-			DrawCircle(enemy.x, enemy.y, enemy.z, 250, RGB(100, 0, 0))
-			
-			if menu.aggressiveSubMenu.finisherSettings.finishR and rPosition ~= nil then
-				CastSpell(_R, rPosition.x, rPosition.z)
+			if GetDistance(enemy) < skillR.range and ValidTarget(enemy) and rDamage > enemy.health and myHero:CanUseSpell(_R) == READY then
+				PrintFloatText(enemy, 0, "Press R to do tons of damage")
+				DrawCircle3D(enemy.x, enemy.y, enemy.z, 150, 1, RGB(100, 0, 0))
+				DrawCircle3D(enemy.x, enemy.y, enemy.z, 200, 1, RGB(100, 0, 0))
+				DrawCircle3D(enemy.x, enemy.y, enemy.z, 250, 1, RGB(100, 0, 0))
+				
+				if menu.aggressiveSubMenu.finisherSettings.finishR and rPosition ~= nil then
+					CastSpell(_R, rPosition.x, rPosition.z)
+				end
 			end
 		end
 	end
@@ -104,18 +107,10 @@ function combo()
 			end
 		end
 		
-		if menu.aggressiveSubMenu.comboSettings.comboR then
-			local aoeRPosition = GetAoESpellPosition(skillR.width, target, skillR.delay)
-			
-			if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillR.range and myHero:CanUseSpell(_R) == READY then
-				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
-			end
-		end
-		
 		if menu.basicSubMenu.orbEnable then
 			OrbWalking(target)
 		end
-	else 
+	elseif menu.basicSubMenu.orbEnable then
 		moveToCursor()
 	end
 end
@@ -149,7 +144,7 @@ function harass()
 		if menu.basicSubMenu.orbEnable then
 			OrbWalking(target)
 		end
-	else 
+	elseif menu.basicSubMenu.orbEnable then 
 		moveToCursor()
 	end
 end
@@ -176,38 +171,49 @@ function farm()
 end
 
 function finisher()
-	if menu.aggressiveSubMenu.finisherSettings.finishQ then
-		for i, enemy in pairs(GetEnemyHeroes()) do
-			local adDamage = getDmg("AD", enemy, myHero)
-			local qDamage = getDmg("Q", enemy, myHero) + adDamage + getExtraDamage(enemy)
-			local qPosition = predictionQ:GetPrediction(enemy)
+	if target ~= nil then
+		if menu.aggressiveSubMenu.finisherSettings.finishQ and GetDistance(target) <= skillQ.range then
+			for i, enemy in pairs(GetEnemyHeroes()) do
+				local adDamage = getDmg("AD", enemy, myHero)
+				local qDamage = getDmg("Q", enemy, myHero) + adDamage + getExtraDamage(enemy)
+				local qPosition = predictionQ:GetPrediction(enemy)
 
-			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and qDamage > enemy.health then
-				if VIP_USER then
-					if not qCollision:GetMinionCollision(myHero, qPosition) then
-						CastSpell(_Q, qPosition.x, qPosition.z)
+				if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and qDamage > enemy.health then
+					if VIP_USER then
+						if not qCollision:GetMinionCollision(myHero, qPosition) then
+							CastSpell(_Q, qPosition.x, qPosition.z)
+						end
+					else
+						if not GetMinionCollision(myHero, enemy, skillQ.width) then
+							CastSpell(_Q, qPosition.x, qPosition.z)
+						end			
 					end
-				else
-					if not GetMinionCollision(myHero, enemy, skillQ.width) then
-						CastSpell(_Q, qPosition.x, qPosition.z)
-					end			
 				end
 			end
 		end
-	end
 
-	if menu.aggressiveSubMenu.finisherSettings.finishW then
-		for i, enemy in pairs(GetEnemyHeroes()) do
-			local wPosition = predictionW:GetPrediction(enemy)
-			local wDamage = getDmg("W", enemy, myHero) + myHero.ap
-				
-			if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and wDamage > enemy.health then
-				CastSpell(_W, wPosition.x, wPosition.z)
+		if menu.aggressiveSubMenu.finisherSettings.finishW and GetDistance(target) <= skillW.range then
+			for i, enemy in pairs(GetEnemyHeroes()) do
+				local wPosition = predictionW:GetPrediction(enemy)
+				local wDamage = getDmg("W", enemy, myHero) + myHero.ap
+					
+				if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and wDamage > enemy.health then
+					CastSpell(_W, wPosition.x, wPosition.z)
+				end
 			end
 		end
 	end
 end
 
+function aoeR()
+	if target ~= nil and ValidTarget(target) and menu.basicSubMenu.aoeR then
+		local aoeRPosition = GetAoESpellPosition(skillR.width, target, skillR.delay)
+
+		if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillR.range and myHero:CanUseSpell(_R) == READY then
+			CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
+		end
+	end
+end
 
 function checkManaHarass()
 	if myHero.mana >= myHero.maxMana * (menu.otherSubMenu.managementSettings.manaProcentHarass / 100) then
@@ -283,6 +289,7 @@ function menu()
 	menu.basicSubMenu:addParam("scriptCombo", "Use combo", SCRIPT_PARAM_ONKEYDOWN, false, 32)
 	menu.basicSubMenu:addParam("scriptHarass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("A"))
 	menu.basicSubMenu:addParam("scriptFarm", "Use farm", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
+	menu.basicSubMenu:addParam("aoeR", "Use ultimate at best position", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("Z"))
 	menu.basicSubMenu:addParam("orbEnable", "Enable orbwalking", SCRIPT_PARAM_ONOFF, false)
 	menu.basicSubMenu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
 
