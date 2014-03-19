@@ -2,41 +2,38 @@ if myHero.charName ~= "Jinx" then return end
 
 --Requires
 if VIP_USER then
-	require "Prodiction"
-	require "Collision"
+	require "VPrediction"
+else
+	require "AoE_Skillshot_Position"
 end
-require "AoE_Skillshot_Position"
 
 --Variables
 local target = nil
-local version = 0.4
+local prediction = nil
+local version = 0.5
 local rocket = false
 
 --Skill table
 local skillsTable = {
 	skillQ = {name = "Switcheroo!", minigunRange = 525, fishRange = 525},
-	skillW = {name = "Zap!", range = 1500, speed = 3.3, delay = 600, width = 60},
-	skillE = {name = "Flame Chompers!", range = 900, speed = .885, delay = 375},
-	skillR = {name = "Super Mega Death Rocket!", range = 2000, speed = 1.2, delay = 600, width = 120, radius = 450}
+	skillW = {name = "Zap!", range = 1450, speed = 3300, delay = 0.5, width = 60},
+	skillE = {name = "Flame chompers!", range = 900, speed = .885, delay = 0.25, width = 325},
+	skillR = {name = "Super mega death rocket!", range = 2000, speed = 1200, delay = 0.5, width = 120, radius = 450}
 }
 
 function OnLoad()
-	if VIP_USER then
-		prodiction = ProdictManager.GetInstance()
-		predictionW = prodiction:AddProdictionObject(_W, skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
-		predictionE = prodiction:AddProdictionObject(_E, skillsTable.skillE.range, skillsTable.skillE.speed * 1000, skillsTable.skillE.delay / 1000)
-		predictionR = prodiction:AddProdictionObject(_R, skillsTable.skillR.range, skillsTable.skillR.speed * 1000, skillsTable.skillR.delay / 1000, skillsTable.skillR.width)
-		wCollision = Collision(skillsTable.skillW.range, skillsTable.skillW.speed * 1000, skillsTable.skillW.delay / 1000, skillsTable.skillW.width)
-	else
-		predictionW = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
-		predictionE = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed, skillsTable.skillE.delay)
-		predictionR = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay, skillsTable.skillR.width)
+
+	if not VIP_USER then
+		wPrediction = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
+		ePrediction = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed, skillsTable.skillE.delay)
+		rPrediction = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay, skillsTable.skillR.width)
 	end
 
 	ts = TargetSelector(TARGET_LOW_HP_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
-	menu()
-	
+	if VIP_USER then prediction = VPrediction() end
 	ts.name = "AesJinx"
+	
+	menu()
 	config:addTS(ts)
 	
 	print("AesJinx version: "..version.." loaded!")
@@ -58,115 +55,143 @@ function OnTick()
 end
 
 function OnDraw()
-	if config.drawSubMenu.drawW then DrawCircle2(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, ARGB(255, 255, 255, 255)) end
-	if config.drawSubMenu.drawE then DrawCircle2(myHero.x, myHero.y, myHero.z, skillsTable.skillE.range, ARGB(255, 255, 255, 255)) end
-	if config.drawSubMenu.drawR then DrawCircle2(myHero.x, myHero.y, myHero.z, skillsTable.skillR.range, ARGB(255, 255, 255, 255)) end
-	if config.drawSubMenu.drawKillable then
+	if config.drawSubMenu.drawW then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillsTable.skillW.range, 1, RGB(255, 255, 255)) end
+	if config.drawSubMenu.drawE then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillsTable.skillE.range, 1, RGB(255, 255, 255)) end
+	if config.drawSubMenu.drawR then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillsTable.skillR.range, 1, RGB(255, 255, 255)) end
+	if config.drawSubMenu.drawKillable and myHero:CanUseSpell(_R) == READY then
 		for i, enemy in pairs(GetEnemyHeroes()) do
 			local rDamage = getDmg("R", enemy, myHero)
 			
-			if ValidTarget(enemy) and rDamage > enemy.health then
-				DrawText3D("Killable target with ultimate", enemy.x, enemy.y, enemy.z, 10, ARGB(255, 255, 255, 255), center)
-				DrawCircle2(enemy.x, enemy.y, enemy.z, 150, ARGB(255, 255, 255, 255))
-				DrawCircle2(enemy.x, enemy.y, enemy.z, 200, ARGB(255, 255, 255, 255))
-				DrawCircle2(enemy.x, enemy.y, enemy.z, 250, ARGB(255, 255, 255, 255))
+			if ValidTarget(enemy, skillsTable.skillR.range, true) and rDamage > enemy.health then
+				DrawText3D("Killable target with ultimate", enemy.x, enemy.y, enemy.z, 15, RGB(255, 0, 0), 0)
+				DrawCircle3D(enemy.x, enemy.y, enemy.z, 150, 1, RGB(255, 0, 0))
+				DrawCircle3D(enemy.x, enemy.y, enemy.z, 200, 1, RGB(255, 0, 0))
+				DrawCircle3D(enemy.x, enemy.y, enemy.z, 250, 1, RGB(255, 0, 0))
 			end
 		end
 	end
 end
 
 function combo()
-	if target ~= nil then
+	if ValidTarget(target, skillsTable.skillR.range, true) then
 		if config.aggressiveSubMenu.comboSubMenu.comboW then
-			local wPosition = predictionW:GetPrediction(target)
-			
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and ValidTarget(target) and GetDistance(wPosition) < skillsTable.skillW.range then
-				if VIP_USER then
-					if not wCollision:GetMinionCollision(myHero, wPosition) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				else
-					if not GetMinionCollision(myHero, target, skillsTable.skillW.width) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				end
-			end
+			castW(target)
 		end
 
 		if config.aggressiveSubMenu.comboSubMenu.comboE then
-			local ePosition = predictionE:GetPrediction(target)
-
-			if ePosition ~= nil and myHero:CanUseSpell(_E) and ValidTarget(target) and GetDistance(ePosition) < skillsTable.skillE.range then
-				CastSpell(_E, ePosition.x, ePosition.z)
-			end
+			castE(target)
 		end
 
 		if config.aggressiveSubMenu.comboSubMenu.comboR then
-			local aoeRPosition = GetAoESpellPosition(skillsTable.skillR.radius, target, skillsTable.skillR.delay)
-
-			if aoeRPosition ~= nil and myHero:CanUseSpell(_R) and ValidTarget(target) and GetDistance(aoeRPosition) < skillsTable.skillR.range then
-				CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
-			end
+			castR(target)
 		end
+		
+		-[[
+		if config.aggressiveSubMenu.comboSubMenu.aoeR then
+			aoeR(target)
+		end
+		]]-
 	end
 end
 
 function harass()
-	if target ~= nil then
+	if target ~= nil and checkManaHarass() then
 		if config.aggressiveSubMenu.harassSubMenu.harassW then
-			local wPosition = predictionW:GetPrediction(target)
-			
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and ValidTarget(target) and GetDistance(wPosition) < skillsTable.skillW.range and checkManaHarass() then
-				if VIP_USER then
-					if not wCollision:GetMinionCollision(myHero, wPosition) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				else
-					if not GetMinionCollision(myHero, target, skillsTable.skillW.width) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				end
-			end
+			castW(target)
 		end
 	end
 end
 
 function finisher()
-	if config.aggressiveSubMenu.finisherSubMenu.finishW then
+	if config.aggressiveSubMenu.finisherSubMenu.finishW and myHero:CanUseSpell(_W) == READY then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local wPosition = predictionW:GetPrediction(enemy)
 			local wDamage = getDmg("W", enemy, myHero)
 
-			if wPosition ~= nil and myHero:CanUseSpell(_W) and ValidTarget(enemy) and GetDistance(wPosition) < skillsTable.skillW.range and wDamage > enemy.health then
-				if VIP_USER then
-					if not wCollision:GetMinionCollision(myHero, wPosition) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				else
-					if not GetMinionCollision(myHero, enemy, skillsTable.skillW.width) then
-						CastSpell(_W, wPosition.x, wPosition.z)
-					end
-				end
+			if ValidTarget(enemy, skillsTable.skillR.range, true) and wDamage > enemy.health then
+				castW(enemy)
 			end
 		end
 	end
 
-	if config.aggressiveSubMenu.finisherSubMenu.finishR then
+	if config.aggressiveSubMenu.finisherSubMenu.finishR and myHero:CanUseSpell(_R) == READY then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local rPosition = predictionR:GetPrediction(enemy)
 			local rDamage = getDmg("R", enemy, myHero)
 
-			if rPosition ~= nil and myHero:CanUseSpell(_R)and ValidTarget(enemy) and GetPredictionHealth(enemy, skillsTable.skillR.delay) + 100 < rDamage and GetDistance(rPosition) < skillsTable.skillR.range and rDamage > enemy.health then
-				CastSpell(_R, rPosition.x, rPosition.z)
+			if ValidTarget(enemy, skillsTable.skillR.range, true) and rDamage > enemy.health then
+				castR(enemy)
 			end
 		end
 	end
 end
 
+function castW(Target)
+	if VIP_USER then
+		local wPosition, wChance = prediction:GetLineCastPosition(Target, skillsTable.skillW.delay, skillsTable.skillW.width, skillsTable.skillW.range, skillsTable.skillW.speed, myHero, true)
+		
+		if wPosition ~= nil and GetDistance(wPosition) < skillsTable.skillW.range and myHero:CanUseSpell(_W) == READY and wChance >= 2 then
+			CastSpell(_W, wPosition.x, wPosition.z)
+		end
+	else
+		local wPosition = wPrediction:GetPrediction(Target)
+		
+		if wPosition ~= nil and GetDistance(wPosition) < skillsTable.skillW.range and myHero:CanUseSpell(_W) == READY and not GetMinionCollision(myHero, wPosition, skillsTable.skillW.width) then
+			CastSpell(_W, wPosition.x, wPosition.z)
+		end
+	end
+end
+
+function castE(Target)
+	if VIP_USER then
+		local ePosition, eChance = prediction:GetLineCastPosition(Target, skillsTable.skillE.delay, skillsTable.skillE.width, skillsTable.skillE.range, skillsTable.skillE.speed, myHero, true)
+		
+		if ePosition ~= nil and GetDistance(ePosition) < skillsTable.skillE.range and myHero:CanUseSpell(_E) == READY and eChance >= 3 then
+			CastSpell(_E, ePosition.x, ePosition.z)
+		end
+	else
+		local ePosition = ePrediction:GetPrediction(target)
+		
+		if ePosition ~= nil and GetDistance(ePosition) < skillsTable.skillE.range and myHero:CanUseSpell(_E) == READY then
+			CastSpell(_E, ePosition.x, ePosition.z)
+		end
+	end
+end
+
+function castR(Target)
+	if VIP_USER then
+		local rPosition, rChance = prediction:GetLineCastPosition(Target, skillsTable.skillR.delay, skillsTable.skillR.width, skillsTable.skillR.range, skillsTable.skillR.speed, myHero, false)
+		
+		if rPosition ~= nil and GetDistance(rPosition) < skillsTable.skillR.range and myHero:CanUseSpell(_R) == READY and rChance >= 2 then
+			CastSpell(_R, rPosition.x, rPosition.z)
+		end
+	else
+		local rPosition = wPrediction:GetPrediction(Target)
+		
+		if rPosition ~= nil and GetDistance(rPosition) < skillsTable.skillR.range and myHero:CanUseSpell(_R) == READY then
+			CastSpell(_R, rPosition.x, rPosition.z)
+		end
+	end
+end
+
+function aoeR(Target)
+	if VIP_USER then
+		local aoeRPosition, aoeRChance, aoeRTargets = VPrediction:GetLineAOECastPosition(Target, skillsTable.skillR.delay, skillsTable.skillR.radius, skillsTable.skillR.range, skillsTable.skillR.speed, myHero)
+	
+		if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillsTable.skillR.range and myHero:CanUseSpell(_R) == READY and aoeRChance >= 2 and aoeRTargets > 2 then
+			CastSpell(_R, rPosition.x, rPosition.z)
+		end
+	else
+		local aoeRPosition = GetAoESpellPosition(skillsTable.skillR.radius, target, skillsTable.skillR.delay)
+		
+		if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillsTable.skillR.range and myHero:CanUseSpell(_R) == READY then
+			CastSpell(_R, rPosition.x, rPosition.z)
+		end
+	end
+end
+
 function chompers()
-	if config.defensiveSubMenu.chompersSubMenu.stunChompers then
+	if config.defensiveSubMenu.chompersSubMenu.stunChompers and myHero:CanUseSpell(_E) == READY then
 		for i, enemy in pairs(GetEnemyHeroes()) do				
-			if myHero:CanUseSpell(_E) and GetDistance(enemy) < skillsTable.skillE.range and not enemy.canMove then
+			if GetDistance(enemy) < skillsTable.skillE.range and not enemy.canMove then
 				CastSpell(_E, enemy.x, enemy.z)
 			end
 		end
@@ -174,7 +199,7 @@ function chompers()
 end
 
 function rocketLauncher()
-	if target ~= nil then
+	if ValidTarget(target) and checkManaRocket() then
 		if myHero:CanUseSpell(_Q) and GetDistance(target) <= skillsTable.skillQ.minigunRange and rocket == true then
 			CastSpell(_Q)
 		elseif myHero:CanUseSpell(_Q) and GetDistance(target) >= skillsTable.skillQ.minigunRange and GetDistance(target) <= skillsTable.skillQ.fishRange and rocket == false then
@@ -185,6 +210,10 @@ function rocketLauncher()
 	end
 
 	if target == nil and rocket == true then
+		CastSpell(_Q)
+	end
+	
+	if checkManaRocket() == false and rocket == true then
 		CastSpell(_Q)
 	end
 end
@@ -229,33 +258,6 @@ function getQRange()
 	end
 end
 
-function DrawCircleNextLvl(x, y, z, radius, width, color, chordlength)
-	radius = radius or 300
-  quality = math.max(8,round(180/math.deg((math.asin((chordlength/(2*radius)))))))
-  quality = 2 * math.pi / quality
-  radius = radius*.92
-	local points = {}
-	for theta = 0, 2 * math.pi + quality, quality do
-		local c = WorldToScreen(D3DXVECTOR3(x + radius * math.cos(theta), y, z - radius * math.sin(theta)))
-		points[#points + 1] = D3DXVECTOR2(c.x, c.y)
-	end
-	DrawLines2(points, width or 1, color or 4294967295)
-end
-
-function round(num) 
- if num >= 0 then return math.floor(num+.5) else return math.ceil(num-.5) end
-end
-
-function DrawCircle2(x, y, z, radius, color)
-	local vPos1 = Vector(x, y, z)
-	local vPos2 = Vector(cameraPos.x, cameraPos.y, cameraPos.z)
-	local tPos = vPos1 - (vPos1 - vPos2):normalized() * radius
-	local sPos = WorldToScreen(D3DXVECTOR3(tPos.x, tPos.y, tPos.z))
-	if OnScreen({ x = sPos.x, y = sPos.y }, { x = sPos.x, y = sPos.y }) then
-		DrawCircleNextLvl(x, y, z, radius, 1, color, 20) 
-	end
-end
-
 function menu()
 	config = scriptConfig("AesJinx: Main menu", "aesjinx")
 	-- Basic submenu
@@ -270,6 +272,7 @@ function menu()
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboW", "Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboE", "Use "..skillsTable.skillE.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.comboSubMenu:addParam("comboR", "Use "..skillsTable.skillR.name, SCRIPT_PARAM_ONOFF, false)
+	--config.aggressiveSubMenu.comboSubMenu:addParam("aoeR", "Use "..skillsTable.skillR.name.." as aoe", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("Z"))
 
 	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassW" ,"Use "..skillsTable.skillW.name, SCRIPT_PARAM_ONOFF, false)
