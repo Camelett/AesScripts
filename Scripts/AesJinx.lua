@@ -24,9 +24,9 @@ local skillsTable = {
 function OnLoad()
 
 	if not VIP_USER then
-		wPrediction = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed, skillsTable.skillW.delay, skillsTable.skillW.width)
-		ePrediction = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed, skillsTable.skillE.delay)
-		rPrediction = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed, skillsTable.skillR.delay, skillsTable.skillR.width)
+		wPrediction = TargetPrediction(skillsTable.skillW.range, skillsTable.skillW.speed / 1000, skillsTable.skillW.delay * 1000, skillsTable.skillW.width)
+		ePrediction = TargetPrediction(skillsTable.skillE.range, skillsTable.skillE.speed / 1000, skillsTable.skillE.delay * 1000)
+		rPrediction = TargetPrediction(skillsTable.skillR.range, skillsTable.skillR.speed / 1000, skillsTable.skillR.delay * 1000, skillsTable.skillR.width)
 	end
 
 	ts = TargetSelector(TARGET_LOW_HP_PRIORITY, skillsTable.skillR.range, DAMAGE_PHYSICAL, false)
