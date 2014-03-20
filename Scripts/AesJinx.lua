@@ -86,11 +86,11 @@ function combo()
 			castR(target)
 		end
 		
-		-[[
+		--[[
 		if config.aggressiveSubMenu.comboSubMenu.aoeR then
 			aoeR(target)
 		end
-		]]-
+		]]--
 	end
 end
 
