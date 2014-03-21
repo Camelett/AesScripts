@@ -39,8 +39,8 @@ function OnTick()
 	
 	if config.basicSubMenu.combo then combo() end
 	if config.basicSubMenu.harass then harass() end
-	if config.aggressiveSubMenu.finisherSubMenu.finisherW or finisherR then finisher() end
-	if config.otherSubMenu.chomperSubMenu.stunE then castStunE() end
+	if config.aggressiveSubMenu.finisherSubMenu.finisherW or config.aggressiveSubMenu.finisherSubMenu.finisherR then finisher() end
+	if config.otherSubMenu.chomperSubMenu.stunE then castStunE(target) end
 end
 
 function OnDraw()
@@ -50,11 +50,7 @@ function OnDraw()
 end
 
 function combo()
-	if ValidTarget(target, skills.skillR.range, true) then
-		if config.aggressiveSubMenu.comboSubMenu.comboQ and config.otherSubMenu.manaSubMenu.manaRocket <= (myHero.mana / myHero.maxMana * 100) then
-			switcheroo(target)
-		end
-		
+	if ValidTarget(target, skills.skillR.range, true) then		
 		if config.aggressiveSubMenu.comboSubMenu.comboW then
 			castW(target)
 		end
@@ -71,10 +67,13 @@ function combo()
 			aoeR(target)
 		end
 	end
+	if config.aggressiveSubMenu.comboSubMenu.comboQ then
+		switcheroo(target)
+	end
 end
 
 function harass()
-	if ValidTarget(target, skills.skillW.range, true) and config.otherSubMenu.manaSubMenu.manaHarass <= (myHero.mana / myHero.maxMana * 100) then
+	if ValidTarget(target, skills.skillW.range, true) and isEnoughHarass() then
 		if config.aggressiveSubMenu.harassSubMenu.harassQ then
 			switcheroo(target)
 		end
@@ -119,7 +118,7 @@ function castW(Target)
 	else
 		local wPosition = wPrediction:GetPrediction(Target)
 		
-		if wPosition ~= nil and GetDistance(wPosition) < skills.skillW.range and myHero:CanUseSpell(_W) == READY then
+		if wPosition ~= nil and GetDistance(wPosition) < skills.skillW.range and myHero:CanUseSpell(_W) == READY and not GetMinionCollision(myHero, wPosition, skills.skillW.width)then
 			CastSpell(_W, wPosition.x, wPosition.z)
 		end
 	end
@@ -146,14 +145,12 @@ function castStunE(Target)
 		if VIP_USER then
 			local ePosition, eChance = prediction:GetCircularCastPosition(Target, skills.skillE.delay, skills.skillE.radius, skills.skillE.range, skills.skillE.speed, myHero, false)
 			
-			if ePosition ~= nil and GetDistance(ePosition) < skills.skillE.range and myHero:CanUseSpell(_E) == READY and eChance >= 3 then
+			if ePosition ~= nil and GetDistance(ePosition) < skills.skillE.range and myHero:CanUseSpell(_E) == READY and eChance >= 4 then
 				CastSpell(_E, ePosition.x, ePosition.z)
 			end
-		else
-			local ePosition = ePrediction:GetPrediction(Target)
-			
-			if ePosition ~= nil and GetDistance(ePosition) < skills.skillE.range and myHero:CanUseSpell(_E) == READY and not Target.canMove then
-				CastSpell(_E, ePosition.x, ePosition.z)
+		else			
+			if GetDistance(Target) < skills.skillE.range and myHero:CanUseSpell(_E) == READY and not Target.canMove then
+				CastSpell(_E, Target.x, Target.z)
 			end
 		end
 	end
@@ -192,11 +189,17 @@ function aoeR(Target)
 end
 
 function switcheroo(Target)
-	if myHero:CanUseSpell(_Q) == READY and GetDistance(Target) < skills.skillQ.range and isRocket() then
+	if ValidTarget(Target) then
+		if myHero:CanUseSpell(_Q) == READY and GetDistance(Target) < skills.skillQ.range and isRocket() then -- Target is within minigun range
+			CastSpell(_Q)
+		elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and not isRocket() and isEnoughRockets() then -- Target is further than minigun range
+			CastSpell(_Q)
+		end
+	elseif not ValidTarget(Target) and isRocket() then
 		CastSpell(_Q)
-	elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and isRocket() and GetDistance(Target) < getRocketRange() then
-		CastSpell(_Q)
-	elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and not isRocket() then
+	end
+	
+	if not isEnoughRockets() and isRocket() then
 		CastSpell(_Q)
 	end
 end
@@ -205,12 +208,20 @@ function getRocketRange()
 	local ranges = {75, 100, 125, 150, 175}
 	
 	if myHero:GetSpellData(_Q).level > 0 and isRocket() then
-		return myHero.range + ranges[myHero:GetSpellData(_Q).level]
+		return myHero.range + 65 + ranges[myHero:GetSpellData(_Q).level]
 	end
 end
 
 function isRocket()
 	return myHero.range > 525.5
+end
+
+function isEnoughRockets()
+	return myHero.mana >= myHero.maxMana * (config.otherSubMenu.manaSubMenu.manaRocket / 100)
+end
+
+function isEnoughHarass()
+	return myHero.mana >= myHero.maxMana * (config.otherSubMenu.manaSubMenu.manaHarass / 100)
 end
 
 function menu()
