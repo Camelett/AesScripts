@@ -86,23 +86,23 @@ function harass()
 end
 
 function finisher()
-	if ValidTarget(target, skills.skillR.range, true) then
-		if config.aggressiveSubMenu.finisherSubMenu.finisherW then
-			for i, enemys in pairs(GetEnemyHeroes()) do
-				local wDamage = getDmg("W", enemys, myHero)
+	for i = 1, heroManager.iCount do
+		local enemy = heroManager:getHero(i)
+		
+		if ValidTarget(enemy, skills.skillR.range, true) then
+			if config.aggressiveSubMenu.finisherSubMenu.finisherW then
+				local wDamage = getDmg("W", enemy, myHero)
 				
-				if wDamage > enemys.health then
-					castW(enemys)
+				if wDamage > enemy.health then
+					castW(enemy)
 				end
 			end
-		end
 		
-		if config.aggressiveSubMenu.finisherSubMenu.finisherR then
-			for i, enemys in pairs(GetEnemyHeroes()) do
-				local rDamage = getDmg("R", enemys, myHero)
+			if config.aggressiveSubMenu.finisherSubMenu.finisherR then
+				local rDamage = getDmg("R", enemy, myHero)
 				
-				if rDamage > enemys.health then
-					castR(enemys)
+				if rDamage > enemy.health then
+					castR(enemy)
 				end
 			end
 		end
