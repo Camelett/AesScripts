@@ -1,6 +1,6 @@
-if myHero.charName ~= "Jinx" then return end
-
 local version = 1.1
+
+if myHero.charName ~= "Jinx" then return end
 
 -- Credits for honda7 and Skeem for updater
 local autoupdateenabled = true
