@@ -7,12 +7,11 @@ end
 local version = 0.1
 local target = nil
 local prediction = nil
-local rKillable = false
 
 local skills = {
-	skillQ = {name = "Piltover peacemaker", range = 1250, speed = 2200, delay = 0.250, width = 90},
-	skillW = {name = "Yordle snap trap", range = 800, speed = 1450, delay = 0.500, width = 100},
-	skillE = {name = "90 caliber net", range = 950, speed = 2000, delay = 0, width = 80},
+	skillQ = {name = "Piltover peacemaker", range = 1300, speed = 2200, delay = 0.625, width = 90},
+	skillW = {name = "Yordle snap trap", range = 800, speed = 1450, delay = 0.250, width = 100},
+	skillE = {name = "90 caliber net", range = 1000, speed = 2000, delay = 0.250, width = 80},
 	skillR = {name = "Ace in the hole"}
 }
 
@@ -54,7 +53,8 @@ function OnDraw()
 			local enemy = heroManager:getHero(i)
 			
 			if myHero:CanUseSpell(_R) == READY then
-				local rDamage = getDmg("R", enemy, myHero)
+				local correction = myHero:GetSpellData(_R).level * 20
+				local rDamage = getDmg("R", enemy, myHero) - correction
 
 				if rDamage > enemy.health and ValidTarget(enemy, getRRange(), true) then
 					DrawText3D("Press R to kill!", enemy.x, enemy.y, enemy.z, 15, RGB(255, 0, 0), 0)
@@ -286,7 +286,7 @@ function menu()
 	
 	config:addSubMenu("Defensive settings", "defensiveSubMenu")
 	config.defensiveSubMenu:addParam("autoE", "Use "..skills.skillE.name.." from gapclosers", SCRIPT_PARAM_ONOFF, false)
-	config.defensiveSubMenu:addParam("reversedE", "Use "..skills.skillE.name.." reversed", SCRIPT_PARAM_ONOFF, false)
+	config.defensiveSubMenu:addParam("reversedE", "Use "..skills.skillE.name.." reversed", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("E"))
 	config.defensiveSubMenu:addParam("autoW", "Use "..skills.skillW.name.." under stunned enemy", SCRIPT_PARAM_ONOFF, false)
 	
 	config:addSubMenu("Other settings", "otherSubMenu")
