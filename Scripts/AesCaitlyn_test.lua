@@ -1,6 +1,6 @@
-if myHero.charName ~= "Caitlyn" then return end
+local version = "2.4"
 
-local version = "1.1"
+if myHero.charName ~= "Caitlyn" then return end
 
 local autoupdateenabled = true
 local UPDATE_SCRIPT_NAME = "AesCaitlyn"
@@ -62,8 +62,6 @@ function OnLoad()
 	
 	menu()
 	config:addTS(targetSelector)
-	
-	print("AesCaitlyn "..version.." loaded!")
 end
 
 function OnTick()
