@@ -1,11 +1,11 @@
 if myHero.charName ~= "Caitlyn" then return end
 
-local version = "1.0"
+local version = "1.1"
 
 local autoupdateenabled = true
-local UPDATE_SCRIPT_NAME = "AesJinx"
+local UPDATE_SCRIPT_NAME = "AesCaitlyn"
 local UPDATE_HOST = "github.com"
-local UPDATE_PATH = "/Tikutis/AesScripts/blob/master/Scripts/AesCaitlyn.lua"
+local UPDATE_PATH = "/Tikutis/AesScripts/blob/master/Scripts/AesCaitlyn_test.lua"
 local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
 local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
 
