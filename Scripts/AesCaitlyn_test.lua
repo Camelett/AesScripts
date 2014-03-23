@@ -1,11 +1,11 @@
-local version = "2.4"
+local version = "1.10"
 
 if myHero.charName ~= "Caitlyn" then return end
 
 local autoupdateenabled = true
-local UPDATE_SCRIPT_NAME = "AesCaitlyn"
-local UPDATE_HOST = "github.com"
-local UPDATE_PATH = "/Tikutis/AesScripts/blob/master/Scripts/AesCaitlyn_test.lua"
+local UPDATE_SCRIPT_NAME = "AesCaitlyn_test"
+local UPDATE_HOST = "raw.github.com"
+local UPDATE_PATH = "/Tikutis/AesScripts/master/Scripts/AesCaitlyn_test.lua?chunk="..math.random(1, 1000)
 local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
 local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
 
