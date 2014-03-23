@@ -1,10 +1,45 @@
+local version = "1.0"
+
 if myHero.charName ~= "Caitlyn" then return end
+
+-- Credits for honda7 and Skeem for updater
+local autoupdateenabled = true
+local UPDATE_SCRIPT_NAME = "AesCaitlyn"
+local UPDATE_HOST = "raw.github.com"
+local UPDATE_PATH = "/Tikutis/AesScripts/master/Scripts/AesCaitlyn.lua?chunk="..math.random(1, 1000)
+local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
+local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
+
+local ServerData
+if autoupdateenabled then
+	GetAsyncWebResult(UPDATE_HOST, UPDATE_PATH, function(d) ServerData = d end)
+	function update()
+		if ServerData ~= nil then
+			local ServerVersion
+			local send, tmp, sstart = nil, string.find(ServerData, "local version = \"")
+			if sstart then
+				send, tmp = string.find(ServerData, "\"", sstart+1)
+			end
+			if send then
+				ServerVersion = tonumber(string.sub(ServerData, sstart+1, send-1))
+			end
+
+			if ServerVersion ~= nil and tonumber(ServerVersion) ~= nil and tonumber(ServerVersion) > tonumber(version) then
+				DownloadFile(UPDATE_URL.."?nocache"..myHero.charName..os.clock(), UPDATE_FILE_PATH, function () print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> successfully updated. ("..version.." => "..ServerVersion..")</font>") end)     
+			elseif ServerVersion then
+				print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> You have got the latest version: <u><b>"..ServerVersion.."</b></u></font>")
+			end		
+			ServerData = nil
+		end
+	end
+	AddTickCallback(update)
+end
+
 
 if VIP_USER then
 	require "VPrediction"
 end
 
-local version = 0.1
 local target = nil
 local prediction = nil
 
@@ -28,8 +63,6 @@ function OnLoad()
 	
 	menu()
 	config:addTS(targetSelector)
-	
-	print("AesCaitlyn "..version.." loaded!")
 end
 
 function OnTick()
