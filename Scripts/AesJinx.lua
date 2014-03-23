@@ -64,7 +64,6 @@ function OnLoad()
 	if VIP_USER then prediction = VPrediction() end
 	targetSelector.name = "AesJinx"
 	config:addTS(targetSelector)
-	print("AesJinx "..version.." loaded!")
 end
 
 function OnTick()
