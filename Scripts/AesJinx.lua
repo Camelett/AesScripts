@@ -1,12 +1,46 @@
 if myHero.charName ~= "Jinx" then return end
 
+local version = 1.1
+
+-- Credits for honda7 and Skeem for updater
+local autoupdateenabled = true
+local UPDATE_SCRIPT_NAME = "AesJinx"
+local UPDATE_HOST = "raw.github.com"
+local UPDATE_PATH = "/Tikutis/AesScripts/master/Scripts/AesJinx.lua?chunk="..math.random(1, 1000)
+local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
+local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
+
+local ServerData
+if autoupdateenabled then
+	GetAsyncWebResult(UPDATE_HOST, UPDATE_PATH, function(d) ServerData = d end)
+	function update()
+		if ServerData ~= nil then
+			local ServerVersion
+			local send, tmp, sstart = nil, string.find(ServerData, "local version = \"")
+			if sstart then
+				send, tmp = string.find(ServerData, "\"", sstart+1)
+			end
+			if send then
+				ServerVersion = tonumber(string.sub(ServerData, sstart+1, send-1))
+			end
+
+			if ServerVersion ~= nil and tonumber(ServerVersion) ~= nil and tonumber(ServerVersion) > tonumber(version) then
+				DownloadFile(UPDATE_URL.."?nocache"..myHero.charName..os.clock(), UPDATE_FILE_PATH, function () print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> successfully updated. ("..version.." => "..ServerVersion..")</font>") end)     
+			elseif ServerVersion then
+				print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> You have got the latest version: <u><b>"..ServerVersion.."</b></u></font>")
+			end		
+			ServerData = nil
+		end
+	end
+	AddTickCallback(update)
+end
+
 if VIP_USER then
 	require "VPrediction"
 else
 	require "AoE_Skillshot_Position"
 end
 
-local version = 1.0
 local target = nil
 local prediction = nil
 
@@ -98,7 +132,8 @@ function finisher()
 			end
 		
 			if config.aggressiveSubMenu.finisherSubMenu.finisherR then
-				local rDamage = getDmg("R", enemy, myHero)
+				local correction = myHero:GetSpellData(_R).level * 10
+				local rDamage = getDmg("R", enemy, myHero) - correction
 				
 				if rDamage > enemy.health then
 					castR(enemy)
@@ -190,16 +225,18 @@ end
 
 function switcheroo(Target)
 	if ValidTarget(Target) then
-		if myHero:CanUseSpell(_Q) == READY and GetDistance(Target) < skills.skillQ.range and isRocket() then -- Target is within minigun range
+		if myHero:CanUseSpell(_Q) == READY and GetDistance(Target) < skills.skillQ.range and isRocket() then -- Target is within minigun range and using rockets: changing to minigun
 			CastSpell(_Q)
-		elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and not isRocket() and isEnoughRockets() then -- Target is further than minigun range
+		elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and not isRocket() and isEnoughRockets() then -- Target is further than minigun range, not using rockets and enough mana: Changing to rocket
 			CastSpell(_Q)
 		end
-	elseif not ValidTarget(Target) and isRocket() then
-		CastSpell(_Q)
 	end
 	
-	if not isEnoughRockets() and isRocket() then
+	if myHero:CanUseSpell(_Q) == READY and not ValidTarget(Target) and isRocket() then -- Target is not valid and using rockets: Changing to minigun
+		CastSpell(_Q)
+	end
+
+	if myHero:CanUseSpell(_Q) == READY and not isEnoughRockets() and isRocket() then -- Using rockets and not enough mana: Changing to minigun
 		CastSpell(_Q)
 	end
 end
