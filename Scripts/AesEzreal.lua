@@ -1,47 +1,70 @@
+local version = "1.0"
+
 if myHero.charName ~= "Ezreal" then return end
 
--- Require
-require "AoE_Skillshot_Position"
+-- Credits for honda7 and Skeem for updater
+local autoupdateenabled = true
+local UPDATE_SCRIPT_NAME = "AesEzreal"
+local UPDATE_HOST = "raw.github.com"
+local UPDATE_PATH = "/Tikutis/AesScripts/master/Scripts/AesEzreal.lua?chunk="..math.random(1, 1000)
+local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
+local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
 
-if VIP_USER then
-	require "Prodiction"
-	require "Collision"
+local ServerData
+if autoupdateenabled then
+	GetAsyncWebResult(UPDATE_HOST, UPDATE_PATH, function(d) ServerData = d end)
+	function update()
+		if ServerData ~= nil then
+			local ServerVersion
+			local send, tmp, sstart = nil, string.find(ServerData, "local version = \"")
+			if sstart then
+				send, tmp = string.find(ServerData, "\"", sstart+1)
+			end
+			if send then
+				ServerVersion = tonumber(string.sub(ServerData, sstart+1, send-1))
+			end
+
+			if ServerVersion ~= nil and tonumber(ServerVersion) ~= nil and tonumber(ServerVersion) > tonumber(version) then
+				DownloadFile(UPDATE_URL.."?nocache"..myHero.charName..os.clock(), UPDATE_FILE_PATH, function () print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> successfully updated. ("..version.." => "..ServerVersion..")</font>") end)     
+			elseif ServerVersion then
+				print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> You have got the latest version: <u><b>"..ServerVersion.."</b></u></font>")
+			end		
+			ServerData = nil
+		end
+	end
+	AddTickCallback(update)
+end
+
+-- Require
+if VIP_USER then 
+	require "VPrediction"
+else
+	require "AoE_Skillshot_Position"
 end
 
 -- Variables
 local target
 local enemyMinions
-local version = 1.6
-local lastAnimation = nil
-local lastAttack = 0
-local lastAttackCD = 0
-local lastWindUpTime = 0
+local prediction = nil
 
 -- Spell information
-local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2.0, delay = 250, width = 60}
-local skillW = {spellName = "Essence Flux", range = 1050, speed = 1.6, delay = 250, width = 80}
-local skillR = {spellName = "Trueshot Barrage", range = 2000, speed = 2.0, delay = 1000, width = 160}
+local skillQ = {spellName = "Mystic Shot", range = 1200, speed = 2000, delay = .250, width = 60}
+local skillW = {spellName = "Essence Flux", range = 1050, speed = 1600, delay = .250, width = 80}
+local skillR = {spellName = "Trueshot Barrage", range = 2000, speed = 2000, delay = 1.0, width = 160}
 
 function OnLoad()
 	if VIP_USER then
-		prodiction = ProdictManager.GetInstance()
-		predictionQ = prodiction:AddProdictionObject(_Q, skillQ.range, skillQ.speed * 1000, skillQ.delay / 1000, skillQ.width)
-		predictionW = prodiction:AddProdictionObject(_W, skillW.range, skillW.speed * 1000, skillW.delay / 1000, skillW.width)
-		predictionR = prodiction:AddProdictionObject(_R, skillR.range, skillR.speed * 1000, skillR.delay / 1000, skillR.width)
-		qCollision = Collision(skillQ.range, skillQ.speed, skillQ.delay / 1000, skillQ.width)
-		rCollision = Collision(skillR.range, skillR.speed, skillR.delay / 1000, skillR.width)
+		prediction = VPrediction()
 	else
-		predictionQ = TargetPrediction(skillQ.range, skillQ.speed, skillQ.delay, skillQ.width)
-		predictionW = TargetPrediction(skillW.range, skillW.speed, skillW.delay)
-		predictionR = TargetPrediction(skillR.range, skillR.speed, skillR.delay)
+		qPrediction = TargetPrediction(skillQ.range, skillQ.speed / 1000, skillQ.delay * 1000, skillQ.width)
+		wPrediction = TargetPrediction(skillW.range, skillW.speed / 1000, skillW.delay * 1000, skillW.width)
+		rPrediction = TargetPrediction(skillR.range, skillR.speed / 1000, skillR.delay * 1000, skillR.width)
 	end
-	
-	PrintChat("AesEzreal loaded! Version: "..version)
+
 	menu()
 	targetSelector = TargetSelector(TARGET_LESS_CAST_PRIORITY, skillR.range, DAMAGE_PHYSICAL, false)
-	enemyMinions = minionManager(MINION_ENEMY, skillQ.range, myHero)
-	
 	targetSelector.name = "AesEzreal"
+	enemyMinions = minionManager(MINION_ENEMY, skillQ.range, myHero)
 	menu:addTS(targetSelector)
 end
 	
@@ -62,19 +85,20 @@ function OnDraw()
 	if menu.otherSubMenu.drawSettings.drawQ then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillQ.range, 1, RGB(255, 255, 255)) end
 	if menu.otherSubMenu.drawSettings.drawW then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillW.range, 1, RGB(255, 255, 255)) end
 	if menu.otherSubMenu.drawSettings.drawR then DrawCircle3D(myHero.x, myHero.y, myHero.z, skillR.range, 1, RGB(255, 255, 255)) end
-	if target ~= nil and GetDistance(target) <= skillR.range and myHero:CanUseSpell(_R) == READY then
+	
+	if ValidTarget(target, skillR.range, true) and myHero:CanUseSpell(_R) == READY then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local rPosition = predictionR:GetPrediction(enemy)
-			local rDamage = getDmg("R", enemy, myHero, 2)
+			local correction = myHero:GetSpellData(_R).level * 100
+			local rDamage = getDmg("R", enemy, myHero) - correction
 
-			if GetDistance(enemy) < skillR.range and ValidTarget(enemy) and rDamage > enemy.health and myHero:CanUseSpell(_R) == READY then
-				PrintFloatText(enemy, 0, "Press R to do tons of damage")
+			if ValidTarget(enemy, skillR.range, true) and rDamage > enemy.health then
+				DrawText3D("Press R to kill!", enemy.x, enemy.y, enemy.z, 15, RGB(255, 0, 0), 0)
 				DrawCircle3D(enemy.x, enemy.y, enemy.z, 150, 1, RGB(100, 0, 0))
 				DrawCircle3D(enemy.x, enemy.y, enemy.z, 200, 1, RGB(100, 0, 0))
 				DrawCircle3D(enemy.x, enemy.y, enemy.z, 250, 1, RGB(100, 0, 0))
 				
-				if menu.aggressiveSubMenu.finisherSettings.finishR and rPosition ~= nil then
-					CastSpell(_R, rPosition.x, rPosition.z)
+				if menu.aggressiveSubMenu.finisherSettings.finishR then
+					castR(enemy)
 				end
 			end
 		end
@@ -82,136 +106,131 @@ function OnDraw()
 end
 
 function combo()
-	if target ~= nil and ValidTarget(target) then
+	if ValidTarget(target, skillQ.range, true) then
 		if menu.aggressiveSubMenu.comboSettings.comboQ then
-			local qPosition = predictionQ:GetPrediction(target)
-
-			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY then
-				if VIP_USER then
-					if not qCollision:GetMinionCollision(myHero, qPosition) then
-						CastSpell(_Q, qPosition.x, qPosition.z)
-					end
-				else
-					if not GetMinionCollision(myHero, target, skillQ.width) then
-						CastSpell(_Q, qPosition.x, qPosition.z)
-					end
-				end
-			end
+			castQ(target)
 		end
 
 		if menu.aggressiveSubMenu.comboSettings.comboW then
-			local wPosition = predictionW:GetPrediction(target)
-			
-			if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY then
-				CastSpell(_W, wPosition.x, wPosition.z)
-			end
+			castW(target)
 		end
-		
-		if menu.basicSubMenu.orbEnable then
-			OrbWalking(target)
-		end
-	elseif menu.basicSubMenu.orbEnable then
-		moveToCursor()
 	end
 end
 
 function harass()
-	if target ~= nil and ValidTarget(target) then
+	if ValidTarget(target, skillQ.range, true) then
 		if menu.aggressiveSubMenu.harassSettings.harassQ then
-			local qPosition = predictionQ:GetPrediction(target)
-			
-			if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and checkManaHarass() then
-				if VIP_USER then
-					if not qCollision:GetMinionCollision(myHero, qPosition) then
-						CastSpell(_Q, qPosition.x, qPosition.z)
-					end
-				else
-					if not GetMinionCollision(myHero, target, skillQ.width) then
-						CastSpell(_Q, qPosition.x, qPosition.z)
-					end			
-				end
-			end
+			castQ(target)
 		end
 		
 		if menu.aggressiveSubMenu.harassSettings.harassW then
-			local wPosition = predictionW:GetPrediction(target)
-
-			if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and checkManaHarass() then
-				CastSpell(_W, wPosition.x, wPosition.z)
-			end
+			castW(target)
 		end
-		
-		if menu.basicSubMenu.orbEnable then
-			OrbWalking(target)
-		end
-	elseif menu.basicSubMenu.orbEnable then 
-		moveToCursor()
 	end
 end
 
 function farm()
-	if menu.basicSubMenu.scriptFarm and menu.aggressiveSubMenu.farmingSettings.farmQ and checkManaFarm() then
+	if menu.aggressiveSubMenu.farmingSettings.farmQ and checkManaFarm() then
 		for i, minion in pairs(enemyMinions.objects) do
 			local adDamage = getDmg("AD", minion, myHero)
 			local qDamage = getDmg("Q", minion, myHero) + adDamage + getExtraDamage(minion)
-			
-			if not minion.dead and GetDistance(minion) < skillQ.range and qDamage > minion.health and myHero:CanUseSpell(_Q) == READY then
-				if VIP_USER then
-					if not qCollision:GetMinionCollision(myHero, minion) then
-						CastSpell(_Q, minion.x, minion.z)
-					end
-				else
-					if not GetMinionCollision(myHero, minion, skillQ.width) then
-						CastSpell(_Q, minion.x, minion.z)
-					end
-				end
+
+			if ValidTarget(minion, skillQ.range) and qDamage > minion.health and myHero:CanUseSpell(_Q) == READY and not GetMinionCollision(myHero, minion, skillQ.width) then
+				CastSpell(_Q, minion.x, minion.z)
 			end
 		end
 	end
 end
 
 function finisher()
-	if target ~= nil then
-		if menu.aggressiveSubMenu.finisherSettings.finishQ and GetDistance(target) <= skillQ.range then
-			for i, enemy in pairs(GetEnemyHeroes()) do
-				local adDamage = getDmg("AD", enemy, myHero)
-				local qDamage = getDmg("Q", enemy, myHero) + adDamage + getExtraDamage(enemy)
-				local qPosition = predictionQ:GetPrediction(enemy)
-
-				if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and qDamage > enemy.health then
-					if VIP_USER then
-						if not qCollision:GetMinionCollision(myHero, qPosition) then
-							CastSpell(_Q, qPosition.x, qPosition.z)
-						end
-					else
-						if not GetMinionCollision(myHero, enemy, skillQ.width) then
-							CastSpell(_Q, qPosition.x, qPosition.z)
-						end			
-					end
+	if ValidTarget(target, skillR.range, true) then
+		for i, enemy in pairs(GetEnemyHeroes()) do
+			if menu.aggressiveSubMenu.finisherSettings.finishQ and ValidTarget(enemy, skillQ.range, true) then
+				local qDamage = getDmg("Q", enemy, myHero)
+				
+				if qDamage > enemy.health then
+					castQ(enemy)
 				end
 			end
-		end
-
-		if menu.aggressiveSubMenu.finisherSettings.finishW and GetDistance(target) <= skillW.range then
-			for i, enemy in pairs(GetEnemyHeroes()) do
-				local wPosition = predictionW:GetPrediction(enemy)
-				local wDamage = getDmg("W", enemy, myHero) + myHero.ap
-					
-				if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and wDamage > enemy.health then
-					CastSpell(_W, wPosition.x, wPosition.z)
+			
+			if menu.aggressiveSubMenu.finisherSettings.finishW and ValidTarget(enemy, skillW.range, true) then
+				local wDamage = getDmg("W", enemy, myHero)
+				
+				if wDamage > enemy.health then
+					castW(enemy)
 				end
 			end
 		end
 	end
 end
 
-function aoeR()
-	if target ~= nil and ValidTarget(target) and menu.basicSubMenu.aoeR then
-		local aoeRPosition = GetAoESpellPosition(skillR.width, target, skillR.delay)
+function castQ(Target)
+	if VIP_USER then
+		local qPosition, qChance = prediction:GetLineCastPosition(Target, skillQ.delay, skillQ.width, skillQ.range, skillQ.speed, myHero, false)
+		
+		if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and qChance >= 2 then
+			CastSpell(_Q, qPosition.x, qPosition.z)
+		end
+	else
+		local qPosition = qPrediction:GetPrediction(Target)
+		
+		if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and not GetMinionCollision(myHero, qPosition, skills.skillQ.width) then
+			CastSpell(_Q, qPosition.x, qPosition.z)
+		end
+	end
+end
 
+function castW(Target)
+	if VIP_USER then
+		local wPosition, wChance = prediction:GetLineCastPosition(Target, skillW.delay, skillW.width, skillW.range, skillW.speed, myHero, false)
+		
+		if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY and wChance >= 2 then
+			CastSpell(_W, wPosition.x, wPosition.z)
+		end
+	else
+		local wPosition = wPrediction:GetPrediction(Target)
+		
+		if wPosition ~= nil and GetDistance(wPosition) < skillW.range and myHero:CanUseSpell(_W) == READY then
+			CastSpell(_W, wPosition.x, wPosition.z)
+		end
+	end
+end
+
+function castR(Target)
+	if VIP_USER then
+		local rPosition, rChance = prediction:GetLineCastPosition(Target, skillR.delay, skillR.width, skillR.range, skillR.speed, myHero, false)
+		
+		if rPosition ~= nil and GetDistance(rPosition) < skillR.range and myHero:CanUseSpell(_R) == READY and rChance >= 2 then
+			CastSpell(_R, rPosition.x, rPosition.z)
+		end
+	else
+		local rPosition = rPrediction:GetPrediction(Target)
+		
+		if rPosition ~= nil and GetDistance(rPosition) < skillR.range and myHero:CanUseSpell(_R) == READY then
+			CastSpell(_R, rPosition.x, rPosition.z)
+		end
+	end
+end
+
+function castAoeR(Target)
+	if VIP_USER then
+		local aoeRPosition, aoeRChance, aoeTargets = prediction:GetLineAOECastPosition(Target, skillR.delay, skillR.width, skillR.range, skillR.speed, myHero)
+		
+		if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillR.range and myHero:CanUseSpell(_R) == READY and aoeRChance >= 2 and aoeTargets >= 2 then
+			CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
+		end
+	else
+		local aoeRPosition = GetAoESpellPosition(skillR.radius, Target, skillR.delay)
+		
 		if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skillR.range and myHero:CanUseSpell(_R) == READY then
 			CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
 		end
+	end
+end
+
+function aoeR()
+	if ValidTarget(target, skillR.range, true) and myHero:CanUseSpell(_R) == READY then
+		castAoeR(target)
 	end
 end
 
@@ -244,43 +263,6 @@ function getExtraDamage(Target)
 	
 	return extraDamage
 end
-
-function OrbWalking(Target)
-	if TimeToAttack() and GetDistance(Target) <= myHero.range + GetDistance(myHero.minBBox) then
-		myHero:Attack(Target)
-    elseif heroCanMove() then
-        moveToCursor()
-    end
-end
-
-function TimeToAttack()
-    return (GetTickCount() + GetLatency()/2 > lastAttack + lastAttackCD)
-end
-
-function heroCanMove()
-	return (GetTickCount() + GetLatency()/2 > lastAttack + lastWindUpTime + 20)
-end
-
-function moveToCursor()
-	if GetDistance(mousePos) then
-		local moveToPos = myHero + (Vector(mousePos) - myHero):normalized()*300
-		myHero:MoveTo(moveToPos.x, moveToPos.z)
-    end        
-end
-
-function OnProcessSpell(object,spell)
-	if object == myHero then
-		if spell.name:lower():find("attack") then
-			lastAttack = GetTickCount() - GetLatency()/2
-			lastWindUpTime = spell.windUpTime*1000
-			lastAttackCD = spell.animationTime*1000
-        end
-    end
-end
-
-function OnAnimation(unit,animationName)
-    if unit.isMe and lastAnimation ~= animationName then lastAnimation = animationName end
-end
 	
 function menu()
 	menu = scriptConfig("AesEzreal: Main menu", "aesezreal")
@@ -290,7 +272,6 @@ function menu()
 	menu.basicSubMenu:addParam("scriptHarass", "Use harass", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("A"))
 	menu.basicSubMenu:addParam("scriptFarm", "Use farm", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("X"))
 	menu.basicSubMenu:addParam("aoeR", "Use ultimate at best position", SCRIPT_PARAM_ONKEYDOWN, false, GetKey("Z"))
-	menu.basicSubMenu:addParam("orbEnable", "Enable orbwalking", SCRIPT_PARAM_ONOFF, false)
 	menu.basicSubMenu:addParam("version", "Version:", SCRIPT_PARAM_INFO, version)
 
 	menu:addSubMenu("AesEzreal: Aggressive settings", "aggressiveSubMenu")
