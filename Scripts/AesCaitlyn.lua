@@ -1,4 +1,4 @@
-local version = "1.0"
+local version = "1.01"
 
 if myHero.charName ~= "Caitlyn" then return end
 
@@ -121,12 +121,12 @@ end
 
 function harass()
 	if ValidTarget(target, skills.skillQ.range) and checkManaHarass() then
-		if config.aggressiveSubMenu.harassSubMenu.harassQ then
-			castQ(target)
-		end
-		
 		if config.aggressiveSubMenu.harassSubMenu.harassE then
 			castE(target)
+		end
+	
+		if config.aggressiveSubMenu.harassSubMenu.harassQ then
+			castQ(target)
 		end
 	end
 end
