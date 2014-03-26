@@ -1,4 +1,4 @@
-local version = "1.0"
+local version = "1.02"
 
 if myHero.charName ~= "Ezreal" then return end
 
@@ -43,7 +43,7 @@ else
 end
 
 -- Variables
-local target
+local target = nil
 local enemyMinions
 local prediction = nil
 
@@ -118,7 +118,7 @@ function combo()
 end
 
 function harass()
-	if ValidTarget(target, skillQ.range, true) then
+	if ValidTarget(target, skillQ.range, true) and checkManaHarass() then
 		if menu.aggressiveSubMenu.harassSettings.harassQ then
 			castQ(target)
 		end
@@ -174,7 +174,7 @@ function castQ(Target)
 	else
 		local qPosition = qPrediction:GetPrediction(Target)
 		
-		if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and not GetMinionCollision(myHero, qPosition, skills.skillQ.width) then
+		if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and not GetMinionCollision(myHero, qPosition, skillQ.width) then
 			CastSpell(_Q, qPosition.x, qPosition.z)
 		end
 	end
