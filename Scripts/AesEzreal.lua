@@ -1,4 +1,4 @@
-local version = "1.02"
+local version = "1.03"
 
 if myHero.charName ~= "Ezreal" then return end
 
@@ -166,7 +166,7 @@ end
 
 function castQ(Target)
 	if VIP_USER then
-		local qPosition, qChance = prediction:GetLineCastPosition(Target, skillQ.delay, skillQ.width, skillQ.range, skillQ.speed, myHero, false)
+		local qPosition, qChance = prediction:GetLineCastPosition(Target, skillQ.delay, skillQ.width, skillQ.range, skillQ.speed, myHero, true)
 		
 		if qPosition ~= nil and GetDistance(qPosition) < skillQ.range and myHero:CanUseSpell(_Q) == READY and qChance >= 2 then
 			CastSpell(_Q, qPosition.x, qPosition.z)
