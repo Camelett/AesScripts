@@ -1,4 +1,4 @@
-local version = "1.03"
+local version = "1.04"
 
 if myHero.charName ~= "Ezreal" then return end
 
@@ -88,7 +88,7 @@ function OnDraw()
 	
 	if ValidTarget(target, skillR.range, true) and myHero:CanUseSpell(_R) == READY then
 		for i, enemy in pairs(GetEnemyHeroes()) do
-			local correction = myHero:GetSpellData(_R).level * 100
+			local correction = myHero:GetSpellData(_R).level * 20
 			local rDamage = getDmg("R", enemy, myHero) - correction
 
 			if ValidTarget(enemy, skillR.range, true) and rDamage > enemy.health then
