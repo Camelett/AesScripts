@@ -1,4 +1,4 @@
-local version = "1.1"
+local version = "1.11"
 
 if myHero.charName ~= "Jinx" then return end
 
@@ -68,6 +68,7 @@ end
 
 function OnTick()
 	targetSelector:update()
+	skills.skillQ.rocketRange = getRocketRange()
 	target = targetSelector.target
 	
 	if config.basicSubMenu.combo then combo() end
@@ -223,15 +224,17 @@ function aoeR(Target)
 end
 
 function switcheroo(Target)
-	if ValidTarget(Target) then
+	if ValidTarget(Target) and isEnoughRockets() then
 		if myHero:CanUseSpell(_Q) == READY and GetDistance(Target) < skills.skillQ.range and isRocket() then -- Target is within minigun range and using rockets: changing to minigun
 			CastSpell(_Q)
-		elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and not isRocket() and isEnoughRockets() then -- Target is further than minigun range, not using rockets and enough mana: Changing to rocket
+		elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > skills.skillQ.range and GetDistance(Target) < getRocketRange() + config.otherSubMenu.switcherooSubMenu.qBuffer and not isRocket() then -- Target is further than minigun range, not using rockets and enough mana: Changing to rocket
+			CastSpell(_Q)
+		elseif myHero:CanUseSpell(_Q) == READY and GetDistance(Target) > getRocketRange() + config.otherSubMenu.switcherooSubMenu.qBuffer and isRocket() then -- Target is futher than rocket range + buffer: changing to minigun
 			CastSpell(_Q)
 		end
 	end
 	
-	if myHero:CanUseSpell(_Q) == READY and not ValidTarget(Target) and isRocket() then -- Target is not valid and using rockets: Changing to minigun
+	if myHero:CanUseSpell(_Q) == READY and not ValidTarget(Target, skills.skillW.range, true) and isRocket() then -- Target is not valid and using rockets: Changing to minigun
 		CastSpell(_Q)
 	end
 
@@ -243,13 +246,13 @@ end
 function getRocketRange()
 	local ranges = {75, 100, 125, 150, 175}
 	
-	if myHero:GetSpellData(_Q).level > 0 and isRocket() then
-		return myHero.range + 65 + ranges[myHero:GetSpellData(_Q).level]
+	if myHero:GetSpellData(_Q).level > 0 then
+		return skills.skillQ.range + GetDistance(myHero, myHero.minBBox)/2 + ranges[myHero:GetSpellData(_Q).level]
 	end
 end
 
 function isRocket()
-	return myHero.range > 525.5
+	return myHero.range > skills.skillQ.range
 end
 
 function isEnoughRockets()
@@ -278,7 +281,7 @@ function menu()
 	config.aggressiveSubMenu:addSubMenu("Harass settings", "harassSubMenu")
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassQ", "Use "..skills.skillQ.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.harassSubMenu:addParam("harassW", "Use "..skills.skillW.name, SCRIPT_PARAM_ONOFF, false)
-	config.aggressiveSubMenu:addSubMenu("Finsiher settings", "finisherSubMenu")
+	config.aggressiveSubMenu:addSubMenu("Finisher settings", "finisherSubMenu")
 	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherW", "Use "..skills.skillW.name, SCRIPT_PARAM_ONOFF, false)
 	config.aggressiveSubMenu.finisherSubMenu:addParam("finisherR", "Use "..skills.skillR.name, SCRIPT_PARAM_ONOFF, false)
 	
@@ -292,4 +295,6 @@ function menu()
 	config.otherSubMenu.manaSubMenu:addParam("manaRocket", "Mana for "..skills.skillQ.name, SCRIPT_PARAM_SLICE, 30, 0, 100, 0)
 	config.otherSubMenu:addSubMenu("Chompers settings", "chomperSubMenu")
 	config.otherSubMenu.chomperSubMenu:addParam("stunE", "Use "..skills.skillE.name.." on stunned", SCRIPT_PARAM_ONOFF, false)
+	config.otherSubMenu:addSubMenu("Switcheroo settings", "switcherooSubMenu")
+	config.otherSubMenu.switcherooSubMenu:addParam("qBuffer", skills.skillQ.name.." buffer", SCRIPT_PARAM_SLICE, 200, 0, 500, 0)
 end
