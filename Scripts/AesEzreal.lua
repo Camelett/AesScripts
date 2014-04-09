@@ -1,4 +1,4 @@
-local version = "1.06"
+local version = "1.07"
 
 if myHero.charName ~= "Ezreal" then return end
 
@@ -25,7 +25,7 @@ if autoupdateenabled then
       end
 
       if ServerVersion ~= nil and tonumber(ServerVersion) ~= nil and tonumber(ServerVersion) > tonumber(version) then
-        DownloadFile(UPDATE_URL.."?nocache"..myHero.charName..os.clock(), UPDATE_FILE_PATH, function () print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> successfully updated. ("..version.." => "..ServerVersion..")</font>") end)
+        DownloadFile(UPDATE_URL.."?nocache", UPDATE_FILE_PATH, function () print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> successfully updated. ("..version.." => "..ServerVersion..")</font>") end)
       elseif ServerVersion then
         print("<font color=\"#FF0000\"><b>"..UPDATE_SCRIPT_NAME..":</b> You have got the latest version: <u><b>"..ServerVersion.."</b></u></font>")
       end
@@ -220,7 +220,7 @@ function castAoeR(Target)
       CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
     end
   else
-    local aoeRPosition = GetAoESpellPosition(skills.skillR.radius, Target, skills.skillR.delay)
+    local aoeRPosition = GetAoESpellPosition(skills.skillR.width, Target, skills.skillR.delay)
 
     if aoeRPosition ~= nil and GetDistance(aoeRPosition) < skills.skillR.range and myHero:CanUseSpell(_R) == READY then
       CastSpell(_R, aoeRPosition.x, aoeRPosition.z)
